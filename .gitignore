@@ -5,3 +5,6 @@ envs/
 # Python bytecode files
 __pycache__/
 *.py[cod]
+
+# Environments
+.env
