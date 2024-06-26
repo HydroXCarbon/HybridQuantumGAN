@@ -24,6 +24,7 @@ PyJWT==2.8.0
 pylatexenc==2.10
 pyparsing==3.1.2
 pyspnego==0.11.0
+python-dotenv==1.0.1
 qiskit==1.1.1
 qiskit-aer==0.14.2
 qiskit-ibm-runtime==0.24.1
