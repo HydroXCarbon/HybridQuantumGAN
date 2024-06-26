@@ -1,0 +1,13 @@
+prefix=/home/hydra/Linux Workspace/HydroXCarbon/Qiskit/envs/qiskit_env
+exec_prefix=/home/hydra/Linux Workspace/HydroXCarbon/Qiskit/envs/qiskit_env
+libdir=/home/hydra/Linux Workspace/HydroXCarbon/Qiskit/envs/qiskit_env/lib
+sharedlibdir=/home/hydra/Linux Workspace/HydroXCarbon/Qiskit/envs/qiskit_env/lib
+includedir=/home/hydra/Linux Workspace/HydroXCarbon/Qiskit/envs/qiskit_env/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
