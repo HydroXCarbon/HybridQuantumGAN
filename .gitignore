@@ -8,7 +8,3 @@ __pycache__/
 
 # Environments
 .env
-
-# Test
-tests/
-notebook/tests/
