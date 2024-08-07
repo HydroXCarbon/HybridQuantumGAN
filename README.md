@@ -1,8 +1,8 @@
-# Quantum Convolutional Neural Networks (QCNN)
+# Quantum Generative Adversarial Networks (QGAN)
 
 ## Introduction
 
-This project explores the implementation and research of Quantum Convolutional Neural Networks (QCNN). QCNN is a novel approach that leverages the principles of quantum computing to perform convolutional operations, which are pivotal in many machine learning tasks. This repository contains the code and resources needed to understand, implement, and experiment with QCNN.
+This project explores the implementation and research of Quantum Generative Adversarial Networks (QGAN). QGAN is an innovative approach that combines the power of quantum computing with the generative capabilities of GANs to create quantum-enhanced generative models. This repository contains the code and resources needed to understand, implement, and experiment with QGANs.
 
 ## Prerequisites
 
@@ -16,11 +16,19 @@ If you don't have Conda or Miniconda installed, you can download and install Min
 
 Follow the steps below to set up the environment and install the necessary packages.
 
-### 1. Create and Activate Conda Environment
+### 1. Create Conda Environment
 
 ```bash
-# Create a new conda environment named qcnn
-conda create --name qcnn python=3.8
+conda create --name qgan python=3.8
+```
 
-# Activate the conda environment
-conda activate qcnn
+### 2. Activate Conda Environment
+```bash
+conda activate qgan
+```
+
+### 3. Install requirement packgages
+```bash
+pip install .
+```
+
