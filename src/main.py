@@ -1,6 +1,6 @@
-from model.Generator import Generator
-from model.ClassicalDiscriminator import Discriminator as Cdiscriminator
-from model.QuantumDiscriminator import Discriminator as Qdiscriminator
+from models.Generator import Generator
+from models.ClassicalDiscriminator import Discriminator as Cdiscriminator
+from models.QuantumDiscriminator import Discriminator as Qdiscriminator
 
 import torch
 import torchvision
