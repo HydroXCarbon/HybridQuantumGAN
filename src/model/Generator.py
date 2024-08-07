@@ -1,6 +1,6 @@
 from torch import nn
 
-class Generator:
+class Generator(nn.Module):
   def __init__(self):
     super().__init__()
     self.model = nn.Sequential(
@@ -14,7 +14,7 @@ class Generator:
         nn.Tanh(),
     )
 
-    def forward(self, x):
-      output = self.model(x)
-      output = output.view(x.size(0), 1, 28, 28)
-      return output
+  def forward(self, x):
+    output = self.model(x)
+    output = output.view(x.size(0), 1, 28, 28)
+    return output

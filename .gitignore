@@ -8,3 +8,7 @@ __pycache__/
 
 # Environments
 .env
+
+# Checkpoints
+notebook/checkpoints/
+src/checkpoints/
