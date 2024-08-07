@@ -27,7 +27,7 @@ conda create --name qgan python=3.8
 conda activate qgan
 ```
 
-### 3. Install requirement packgages
+### 3. Install requirement packages
 ```bash
 pip install .
 ```
