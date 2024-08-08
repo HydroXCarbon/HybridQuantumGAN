@@ -12,3 +12,6 @@ __pycache__/
 # Checkpoints
 notebook/checkpoints/
 src/checkpoints/
+
+# Ignore the data directory
+/data

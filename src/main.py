@@ -1,16 +1,21 @@
 from models.Generator import Generator
 from models.ClassicalDiscriminator import Discriminator as Cdiscriminator
 from models.QuantumDiscriminator import Discriminator as Qdiscriminator
+from features.data_loader import get_data_loader
+from visualization.visualize import show_sample_data
 
 import torch
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 
+
 # Hyperparameters
-lr = 0.001
+d_lr = 0.001
+g_lr = 0.001
 num_epochs = 50
 seed = 111
+batch_size = 32
 
 # Set seed
 torch.manual_seed(seed)
@@ -30,19 +35,12 @@ classicalDiscriminator = Cdiscriminator.to(device=device)
 #quantumDiscriminator = Qdiscriminator.to(device)
 
 # Load data
-transform = transforms.Compose(
-    [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
-)
-train_set = torchvision.datasets.MNIST(
-    root="../data", train=True, download=True, transform=transform
-)
-batch_size = 32
-train_loader = torch.utils.data.DataLoader(
-    train_set, batch_size=batch_size, shuffle=True
-)
+train_loader = get_data_loader(batch_size=batch_size)
+
+# Plot some training samples
 real_samples, mnist_labels = next(iter(train_loader))
-for i in range(16):
-    ax = plt.subplot(4, 4, i + 1)
-    plt.imshow(real_samples[i].reshape(28, 28), cmap="gray_r")
-    plt.xticks([])
-    plt.yticks([])
+show_sample_data(real_samples, sample_size=16)
+
+# Set up optimizers
+optimizer_discriminator = torch.optim.Adam(classicalDiscriminator.parameters(), lr=d_lr)
+optimizer_generator = torch.optim.Adam(generator.parameters(), lr=g_lr)
