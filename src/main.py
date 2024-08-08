@@ -1,8 +1,6 @@
-from models.Generator import Generator
-from models.ClassicalDiscriminator import Discriminator as Cdiscriminator
-from models.QuantumDiscriminator import Discriminator as Qdiscriminator
-from features.data_loader import get_data_loader
-from visualization.visualize import show_sample_data
+from models import Generator, Cdiscriminator, Qdiscriminator
+from features import get_data_loader
+from visualization import show_sample_data
 
 import torch
 import torchvision
