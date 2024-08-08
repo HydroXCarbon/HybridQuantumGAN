@@ -1,12 +1,8 @@
 from models import Generator, Cdiscriminator, Qdiscriminator
-from features import get_data_loader
-from visualization import show_sample_data
+from features import get_data_loader, get_device, get_checkpoint, train_model
+from visualization import show_sample_data 
 
 import torch
-import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-
 
 # Hyperparameters
 d_lr = 0.001
@@ -19,13 +15,7 @@ batch_size = 32
 torch.manual_seed(seed)
 
 # Use cuda if available
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-    print('Using cuda:', torch.cuda.get_device_name(device=device))
-else:
-    device = torch.device("cpu")
-    print('Using cpu: aborded')
-    exit()
+device = get_device()
 
 # Load models
 generator = Generator().to(device=device)
@@ -42,3 +32,17 @@ show_sample_data(real_samples, sample_size=16)
 # Set up optimizers
 optimizer_discriminator = torch.optim.Adam(classicalDiscriminator.parameters(), lr=d_lr)
 optimizer_generator = torch.optim.Adam(generator.parameters(), lr=g_lr)
+
+# Load checkpoint
+start_epoch = get_checkpoint(classicalDiscriminator, generator, optimizer_generator, optimizer_discriminator)
+
+# Train model
+train_model(device, 
+            generator, 
+            classicalDiscriminator, 
+            optimizer_generator,
+            optimizer_discriminator, 
+            train_loader, 
+            num_epochs, 
+            batch_size, 
+            start_epoch)
