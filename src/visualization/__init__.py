@@ -1,2 +1,2 @@
-from show_sample_data import show_sample_data
-from training_progress import plot_training_progress
+from .show_sample_data import show_sample_data
+from .training_progress import plot_training_progress

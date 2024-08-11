@@ -6,13 +6,20 @@ import torch
 import os
 
 # Hyperparameters
-d_lr = 0.001
-g_lr = 0.001
+d_lr = 0.0001
+g_lr = 0.0002
 num_epochs = 50
 batch_size = 32
 seed = 111
 
-checkpoint_folder = os.path.abspath('checkpoints')
+# Set up folders path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_folder = os.path.join(script_dir, '..', 'data')
+checkpoint_folder = os.path.join(script_dir, 'checkpoints')
+
+# Create required folders
+os.makedirs(checkpoint_folder, exist_ok=True)
+os.makedirs(data_folder, exist_ok=True)
 
 # Set seed
 torch.manual_seed(seed)
@@ -22,15 +29,19 @@ device = get_device()
 
 # Load models
 generator = Generator().to(device=device)
-classical_discriminator = Cdiscriminator.to(device=device)
+classical_discriminator = Cdiscriminator()
+classical_discriminator = classical_discriminator.to(device=device)
 #quantumDiscriminator = Qdiscriminator.to(device=device)
 
 # Load data
-train_loader = get_data_loader(batch_size=batch_size)
+train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
 
 # Plot some training samples
-real_samples, mnist_labels = next(iter(train_loader))
-show_sample_data(real_samples, sample_size=16)
+#real_samples, mnist_labels = next(iter(train_loader))
+#show_sample_data(real_samples, sample_size=16)
+
+# Set up loss function
+loss_function = torch.nn.BCELoss()
 
 # Set up optimizers
 optimizer_classical_discriminator = torch.optim.Adam(classical_discriminator.parameters(), lr=d_lr)
@@ -51,7 +62,7 @@ train_model(device=device,
             classical_discriminator=classical_discriminator, 
             optimizer_generator=optimizer_generator,
             optimizer_classical_discriminator=optimizer_classical_discriminator, 
-            loss_function=torch.nn.BCELoss(), 
+            loss_function=loss_function, 
             checkpoint_folder=checkpoint_folder,  
             start_epoch=start_epoch,
             loss_values=loss_values,

@@ -73,13 +73,14 @@ def train_model(device,
       loss_values.entropy_values.append(loss_generator.cpu().detach().numpy() + loss_classical_discriminator.cpu().detach().numpy())
         
     # Show loss
-    plot_training_progress(loss_values.generator_loss_values, loss_values.classical_discriminator_loss_values, loss_values.entropy_values)
+    #plot_training_progress(loss_values.generator_loss_values, loss_values.classical_discriminator_loss_values, loss_values.entropy_values)
     print(f"Epoch: {epoch} Loss D.: {loss_classical_discriminator} Loss G.: {loss_generator}")
 
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
         
       checkpoint_path = os.path.join(checkpoint_folder, f'checkpoint.pth')
+
       torch.save({
         'epoch': epoch + 1,
         'generator_state_dict': generator.state_dict(),
@@ -88,5 +89,5 @@ def train_model(device,
         'optimizer_classical_discriminator_state_dict': optimizer_classical_discriminator.state_dict(),
         'loss_values': loss_values
       }, checkpoint_path)
-      print(f'Checkpoint saved at {checkpoint_path}')
+      print(f'Checkpoint saved (epoch {epoch + 1})')
 
