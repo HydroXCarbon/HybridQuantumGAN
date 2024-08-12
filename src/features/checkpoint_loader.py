@@ -23,6 +23,6 @@ def get_checkpoint(checkpoint_folder, generator, classical_discriminator, optimi
 
 		# Load epoch
 		start_epoch = checkpoint['epoch'] + 1
-		print(f"Resume training from epoch {start_epoch - 1}")
+		print(f"Loading checkpoint from epoch {start_epoch - 1}")
 		
 	return start_epoch, loss_values
