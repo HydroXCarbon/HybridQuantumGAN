@@ -33,5 +33,7 @@ setup(
         "nvidia-nvjitlink-cu12==12.5.82",
         "nvidia-nvtx-cu12==12.1.105",
         "packaging==24.1",
+        "qiskit-algorithms==0.3.0",
+        "qiskit_machine_learning==0.7.2"
     ]
 )
