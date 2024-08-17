@@ -47,7 +47,7 @@ train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
 
 # Plot some training samples
 if show_sample:
-  real_samples, mnist_labels = next(iter(train_loader))
+  real_samples, labels = next(iter(train_loader))
   show_sample_data(real_samples, sample_size=16)
 
 # Set up loss function
