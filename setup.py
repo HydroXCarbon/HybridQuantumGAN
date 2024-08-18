@@ -34,6 +34,9 @@ setup(
         "nvidia-nvtx-cu12==12.1.105",
         "packaging==24.1",
         "qiskit-algorithms==0.3.0",
-        "qiskit_machine_learning==0.7.2"
+        "qiskit_machine_learning==0.7.2",
+        "torchsummary==1.5.1",
+        "qiskit_ibm_runtime==0.24.1",
+        "python-dotenv==1.0.1"
     ]
 )
