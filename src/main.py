@@ -5,7 +5,7 @@ from visualization import show_sample_data, generate_sample
 import torch
 import os
 import matplotlib.pyplot as plt
-# new branch
+# new branch test
 # Hyperparameters
 d_lr = 0.00015
 g_lr = 0.0002
