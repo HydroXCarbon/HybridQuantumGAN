@@ -16,7 +16,7 @@ batch_size = 32
 seed = 111
 checkpoint_interval = 5
 show_sample = True
-load_checkpoint = False
+load_checkpoint = True
 training = True
 generate_data = True
 

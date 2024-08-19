@@ -69,7 +69,7 @@ def train_model(device,
     # Show loss
     
     plot_progress.plot(epoch, loss_values.generator_loss_values, loss_values.classical_discriminator_loss_values, loss_values.entropy_values)
-    print(f"Epoch: {epoch} Loss D.: {loss_classical_discriminator} Loss G.: {loss_generator}")
+    print(f"Epoch: {epoch} Loss D.: {loss_values.classical_discriminator_loss_values[-1]} Loss G.: {loss_values.generator_loss_values[-1]}")
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
         
