@@ -20,11 +20,10 @@ def train_model(device,
                 start_epoch=0,
                 checkpoint_interval=5,
                 training_mode='alternating',
-                loss_values=None):
+                loss_values=LossValues()):
 
   if loss_values is None:
     loss_values = LossValues()
-  print(f'Start training at epoch {start_epoch}')
 
   # Setup models
   generator = model_list[0]
@@ -32,9 +31,11 @@ def train_model(device,
   discriminator_list = model_list[1:]
   optimizer_discriminator_list = optimizer_list[1:]
 
-  # Create thread for plotting (due to long time to plot)
+  # Create instant for plotting 
   plot_progress = PlotTrainingProgress()
 
+  # Training loop
+  print(f'Start training at epoch {start_epoch}')
   for epoch in range(start_epoch, num_epochs):
     for n, (real_samples, mnist_labels) in enumerate(train_loader):
       # Data for training the discriminator

@@ -1,0 +1,25 @@
+Hyperparameters:
+  models:
+    generator:
+      learning_rate: 0.0002
+      model_class: Generator
+    classical_discriminator_1:
+      learning_rate: 0.00015
+      model_class: ClassicalDiscriminator
+    classical_discriminator_2:
+      learning_rate: 0.0002
+      model_class: ClassicalDiscriminator
+    #quantum_discriminator:
+    #  learning_rate: 0.00015
+    #  model_class: QuantumDiscriminator
+  num_epochs: 50
+  batch_size: 32
+
+Configuration:
+  seed: 111
+  checkpoint_interval: 5
+  training_mode: alternating  # training mode 'alternating' or 'combined'
+  show_sample: False
+  load_checkpoint: False
+  training: True
+  generate_data: True

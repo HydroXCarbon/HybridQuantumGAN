@@ -1,28 +1,30 @@
 from features import get_data_loader, get_device, get_checkpoint, train_model, get_model
 from visualization import show_sample_data, generate_sample
-from models import Generator, ClassicalDiscriminator, QuantumDiscriminator
 
 import torch
 import os
+import yaml
 import matplotlib.pyplot as plt
 
+# Load the configuration file
+with open('config.yml', 'r') as file:
+    config = yaml.safe_load(file)
+Hyperparameters = config['Hyperparameters']
+Configuration = config['Configuration']
+
 # Hyperparameters (can have only 1 generator)
-models = {'generator':{'learning_rate':0.0002, 'model_class':Generator}, 
-          'classical discriminator 1':{'learning_rate':0.00015, 'model_class':ClassicalDiscriminator},
-          #'classical discriminator 2':{'learning_rate':0.0002, 'model_class':ClassicalDiscriminator},
-          #'quantum_discriminator':{'learning_rate':0.00015, 'model_class':QuantumDiscriminator}
-        }
-num_epochs = 50
-batch_size = 32
+models = Hyperparameters['models']
+num_epochs = Hyperparameters['num_epochs']
+batch_size = Hyperparameters['batch_size']
 
 # Configuration Settings
-seed = 111
-checkpoint_interval = 5
-training_mode = 'alternating'  # training mode 'alternating' or 'commbined'
-show_sample = False
-load_checkpoint = True
-training = True
-generate_data = True
+seed = Configuration['seed']
+checkpoint_interval = Configuration['checkpoint_interval']
+training_mode = Configuration['training_mode']  # training mode 'alternating' or 'commbined'
+show_sample = Configuration['show_sample']
+load_checkpoint = Configuration['load_checkpoint']
+training = Configuration['training']
+generate_data = Configuration['generate_data']
 
 # Set up folders path
 script_dir = os.path.dirname(os.path.abspath(__file__))

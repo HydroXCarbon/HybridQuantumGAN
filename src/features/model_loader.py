@@ -7,9 +7,13 @@ def get_model(models, device):
   # Initialize models dynamically
   for model_name in models:
     learning_rate = models[model_name]['learning_rate']
-    
+
+    # Get the class object dynamically using globals
+    model_class_name = models[model_name]['model_class']
+    model_class = globals()[model_class_name]
+
     # Set up models dynamically
-    model_instance = models[model_name]['model_class']()
+    model_instance = model_class()
     model_instance = model_instance.to(device)
     model_instance.name = model_name
     model_list.append(model_instance)
