@@ -15,18 +15,24 @@ class PlotTrainingProgress:
         self.ax2.set_ylabel("Relative entropy")
         self.ax2.grid()
 
-    def plot(self, epoch, generator_loss_values, discriminator_loss_values, entropy_values):
+    def plot(self, epoch, loss_values):
 
         self.ax1.cla()
         self.ax2.cla()
 
         self.ax1.set_title(f"Loss (Epoch {epoch})")
-        self.ax1.plot(generator_loss_values, label="generator loss", color="royalblue")
-        self.ax1.plot(discriminator_loss_values, label="discriminator loss", color="magenta")
+        # Plot generator loss
+        for generator in loss_values.generator_loss_values:
+            values = loss_values.generator_loss_values[generator]
+            self.ax1.plot(values, label=generator)
+
+        # Plot discriminator loss
+        for discriminator in loss_values.discriminator_loss_values:
+            values = loss_values.discriminator_loss_values[discriminator]
+            self.ax1.plot(values, label=discriminator)
         self.ax1.legend(loc="best")
 
         self.ax2.set_title(f"Relative entropy (Epoch {epoch})")
-        self.ax2.plot(entropy_values)
 
         self.fig.canvas.draw()
         plt.pause(0.1)

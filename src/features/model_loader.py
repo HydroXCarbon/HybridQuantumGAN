@@ -11,10 +11,12 @@ def get_model(models, device):
     # Set up models dynamically
     model_instance = models[model_name]['model_class']()
     model_instance = model_instance.to(device)
+    model_instance.name = model_name
     model_list.append(model_instance)
 
     # Set up optimizers dynamically
     optimizer_instance = Adam(model_instance.parameters(), lr=learning_rate)
+    optimizer_instance.name = 'optimizer_'+model_name
     optimizer_list.append(optimizer_instance)
 
   return model_list, optimizer_list

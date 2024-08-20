@@ -11,8 +11,8 @@ def get_checkpoint(checkpoint_folder, model_list, optimizer_list):
 		checkpoint = torch.load(checkpoint_path)
 
 		for model, optimizer in zip(model_list, optimizer_list):
-			model.load_state_dict(checkpoint[f'{model.__class__.__name__}_state_dict'])
-			optimizer.load_state_dict(checkpoint[f'{optimizer.__class__.__name__}_state_dict'])
+			model.load_state_dict(checkpoint[f'{model.name}_state_dict'])
+			optimizer.load_state_dict(checkpoint[f'{optimizer.name}_state_dict'])
 
 		# Load loss value
 		loss_values = checkpoint['loss_values']

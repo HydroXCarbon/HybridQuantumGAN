@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 
 # Hyperparameters (can have only 1 generator)
 models = {'generator':{'learning_rate':0.0002, 'model_class':Generator}, 
-          'classical_discriminator':{'learning_rate':0.00015, 'model_class':ClassicalDiscriminator},
-          'quantum_discriminator':{'learning_rate':0.00015, 'model_class':QuantumDiscriminator}
+          'classical discriminator 1':{'learning_rate':0.00015, 'model_class':ClassicalDiscriminator},
+          #'classical discriminator 2':{'learning_rate':0.0002, 'model_class':ClassicalDiscriminator},
+          #'quantum_discriminator':{'learning_rate':0.00015, 'model_class':QuantumDiscriminator}
         }
 num_epochs = 50
 batch_size = 32
@@ -18,9 +19,9 @@ batch_size = 32
 seed = 111
 checkpoint_interval = 5
 training_mode = 'alternating'  # training mode 'alternating' or 'commbined'
-show_sample = True
+show_sample = False
 load_checkpoint = True
-training = False
+training = True
 generate_data = True
 
 # Set up folders path

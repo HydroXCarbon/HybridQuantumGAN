@@ -46,16 +46,18 @@ def train_model(device,
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
-      # Training the classical discriminator
+      # Training the discriminator
       for discriminator, optimizer_discriminator in zip(discriminator_list, optimizer_discriminator_list):
         discriminator.zero_grad()
         output_discriminator = discriminator(all_samples)
         loss_discriminator = loss_function(output_discriminator, all_samples_labels)
-        loss_discriminator.backward()
+        loss_discriminator.backward(retain_graph=True)
         optimizer_discriminator.step()
 
         # Store discriminator loss for plotting
-        loss_values.discriminator_loss_values[discriminator.__class__.__name__] = loss_discriminator.cpu().detach().numpy() 
+        if discriminator.name not in loss_values.discriminator_loss_values:
+            loss_values.discriminator_loss_values[discriminator.name] = []
+        loss_values.discriminator_loss_values[discriminator.name].append(loss_discriminator.cpu().detach().numpy())
 
       # Data for training the generator
       latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
@@ -80,26 +82,31 @@ def train_model(device,
           loss_generator = loss_function(output_discriminator_generated, real_samples_labels)
           loss_generator.backward()
           optimizer_generator.step()
+      else:
+        raise ValueError(f"Training mode {training_mode} not supported")
 
       # Store generator loss for plotting
-      loss_values.generator_loss_values[generator.__class__.__name__] = loss_generator.cpu().detach().numpy()
+      if generator.name not in loss_values.generator_loss_values:
+        loss_values.generator_loss_values[generator.name] = []
+      loss_values.generator_loss_values[generator.name].append(loss_generator.cpu().detach().numpy())
         
     # Show loss
-    plot_progress.plot(epoch, loss_values.generator_loss_values, loss_values.classical_discriminator_loss_values, loss_values.entropy_values)
-    print(f"Epoch: {epoch} Loss D.: {loss_values.classical_discriminator_loss_values[-1]} Loss G.: {loss_values.generator_loss_values[-1]}")
+    plot_progress.plot(epoch, loss_values)
+    print(f"Training [{100 * epoch / num_epochs}%], Epoch: {epoch}, Loss G.: {loss_values.generator_loss_values[generator.name][-1]}")
+
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
-        
       checkpoint_path = os.path.join(checkpoint_folder, f'checkpoint.pth')
-      torch.save({
-        'epoch': epoch,
-        'generator_state_dict': generator.state_dict(),
-        'classical_discriminator_state_dict': classical_discriminator.state_dict(),
-        'quantum_discriminator_state_dict': quantum_discriminator.state_dict(),
-        'optimizer_generator_state_dict': optimizer_generator.state_dict(),
-        'optimizer_classical_discriminator_state_dict': optimizer_classical_discriminator.state_dict(),
-        'optimizer_quantum_discriminator_state_dict': optimizer_quantum_discriminator.state_dict(),
-        'loss_values': loss_values
-      }, checkpoint_path)
-      print(f'Checkpoint saved (epoch {epoch})')
+      checkpoint = {
+          'epoch': epoch,
+          'loss_values': loss_values
+      }
+
+      for model, optimizer in zip(model_list, optimizer_list):
+        checkpoint[f'{model.name}_state_dict'] = model.state_dict()
+        checkpoint[f'{optimizer.name}_state_dict'] = optimizer.state_dict()
+
+      # Save the checkpoint
+      torch.save(checkpoint, checkpoint_path)
+      print(f'Checkpoint saved at epoch {epoch}')
 
