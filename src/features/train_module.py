@@ -6,26 +6,31 @@ import matplotlib.pyplot as plt
 
 class LossValues:
   def __init__(self):
-    self.generator_loss_values = []
-    self.classical_discriminator_loss_values = []
-    self.entropy_values = []
+    self.generator_loss_values = {}
+    self.discriminator_loss_values = {}
+    self.entropy_values = {}
 
 def train_model(device, 
                 num_epochs, 
                 train_loader, 
-                generator, 
-                classical_discriminator, 
-                optimizer_generator, 
-                optimizer_classical_discriminator, 
+                model_list,
+                optimizer_list,
                 loss_function, 
                 checkpoint_folder, 
                 start_epoch=0,
                 checkpoint_interval=5,
+                training_mode='alternating',
                 loss_values=None):
 
   if loss_values is None:
     loss_values = LossValues()
   print(f'Start training at epoch {start_epoch}')
+
+  # Setup models
+  generator = model_list[0]
+  optimizer_generator = optimizer_list[0]
+  discriminator_list = model_list[1:]
+  optimizer_discriminator_list = optimizer_list[1:]
 
   # Create thread for plotting (due to long time to plot)
   plot_progress = PlotTrainingProgress()
@@ -42,11 +47,15 @@ def train_model(device,
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
       # Training the classical discriminator
-      classical_discriminator.zero_grad()
-      output_classical_discriminator = classical_discriminator(all_samples)
-      loss_classical_discriminator = loss_function(output_classical_discriminator, all_samples_labels)
-      loss_classical_discriminator.backward()
-      optimizer_classical_discriminator.step()
+      for discriminator, optimizer_discriminator in zip(discriminator_list, optimizer_discriminator_list):
+        discriminator.zero_grad()
+        output_discriminator = discriminator(all_samples)
+        loss_discriminator = loss_function(output_discriminator, all_samples_labels)
+        loss_discriminator.backward()
+        optimizer_discriminator.step()
+
+        # Store discriminator loss for plotting
+        loss_values.discriminator_loss_values[discriminator.__class__.__name__] = loss_discriminator.cpu().detach().numpy() 
 
       # Data for training the generator
       latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
@@ -54,20 +63,28 @@ def train_model(device,
       # Training the generator
       generator.zero_grad()
       generated_samples = generator(latent_space_samples)
-      output_classical_discriminator_generated = classical_discriminator(generated_samples)
-      loss_generator = loss_function(
-          output_classical_discriminator_generated, real_samples_labels
-      )
-      loss_generator.backward()
-      optimizer_generator.step()
+      if training_mode == 'combined':
+        for discriminator in discriminator_list:
+          output_discriminator_generated = discriminator(generated_samples)
+          if combined_output is None:
+              combined_output = output_discriminator_generated
+          else:
+              combined_output += output_discriminator_generated
+        combined_output /= len(discriminator_list)
+        loss_generator = loss_function(combined_output, real_samples_labels)
+        loss_generator.backward()
+        optimizer_generator.step()
+      elif training_mode == 'alternating':
+        for discriminator in discriminator_list:
+          output_discriminator_generated = discriminator(generated_samples)
+          loss_generator = loss_function(output_discriminator_generated, real_samples_labels)
+          loss_generator.backward()
+          optimizer_generator.step()
 
-      # Store loss for plotting
-      loss_values.generator_loss_values.append(loss_generator.cpu().detach().numpy())
-      loss_values.classical_discriminator_loss_values.append(loss_classical_discriminator.cpu().detach().numpy())
-      loss_values.entropy_values.append(loss_generator.cpu().detach().numpy() + loss_classical_discriminator.cpu().detach().numpy())
+      # Store generator loss for plotting
+      loss_values.generator_loss_values[generator.__class__.__name__] = loss_generator.cpu().detach().numpy()
         
     # Show loss
-    
     plot_progress.plot(epoch, loss_values.generator_loss_values, loss_values.classical_discriminator_loss_values, loss_values.entropy_values)
     print(f"Epoch: {epoch} Loss D.: {loss_values.classical_discriminator_loss_values[-1]} Loss G.: {loss_values.generator_loss_values[-1]}")
     # Save checkpoint at the specified interval
@@ -78,8 +95,10 @@ def train_model(device,
         'epoch': epoch,
         'generator_state_dict': generator.state_dict(),
         'classical_discriminator_state_dict': classical_discriminator.state_dict(),
+        'quantum_discriminator_state_dict': quantum_discriminator.state_dict(),
         'optimizer_generator_state_dict': optimizer_generator.state_dict(),
         'optimizer_classical_discriminator_state_dict': optimizer_classical_discriminator.state_dict(),
+        'optimizer_quantum_discriminator_state_dict': optimizer_quantum_discriminator.state_dict(),
         'loss_values': loss_values
       }, checkpoint_path)
       print(f'Checkpoint saved (epoch {epoch})')

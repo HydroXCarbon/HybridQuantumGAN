@@ -1,23 +1,26 @@
-from models import Generator, Cdiscriminator, Qdiscriminator
-from features import get_data_loader, get_device, get_checkpoint, train_model
+from features import get_data_loader, get_device, get_checkpoint, train_model, get_model
 from visualization import show_sample_data, generate_sample
+from models import Generator, ClassicalDiscriminator, QuantumDiscriminator
 
 import torch
 import os
 import matplotlib.pyplot as plt
 
-# Hyperparameters
-d_lr = 0.00015
-g_lr = 0.0002
+# Hyperparameters (can have only 1 generator)
+models = {'generator':{'learning_rate':0.0002, 'model_class':Generator}, 
+          'classical_discriminator':{'learning_rate':0.00015, 'model_class':ClassicalDiscriminator},
+          'quantum_discriminator':{'learning_rate':0.00015, 'model_class':QuantumDiscriminator}
+        }
 num_epochs = 50
 batch_size = 32
 
 # Configuration Settings
 seed = 111
 checkpoint_interval = 5
+training_mode = 'alternating'  # training mode 'alternating' or 'commbined'
 show_sample = True
 load_checkpoint = True
-training = True
+training = False
 generate_data = True
 
 # Set up folders path
@@ -37,10 +40,7 @@ if seed is not None:
 device = get_device()
 
 # Load models
-generator = Generator().to(device=device)
-classical_discriminator = Cdiscriminator()
-classical_discriminator = classical_discriminator.to(device=device)
-#quantumDiscriminator = Qdiscriminator.to(device=device)
+model_list, optimizer_list = get_model(models, device)
 
 # Load data
 train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
@@ -53,38 +53,31 @@ if show_sample:
 # Set up loss function
 loss_function = torch.nn.BCELoss()
 
-# Set up optimizers
-optimizer_classical_discriminator = torch.optim.Adam(classical_discriminator.parameters(), lr=d_lr)
-optimizer_generator = torch.optim.Adam(generator.parameters(), lr=g_lr)
-
 # Load checkpoint
 start_epoch = 0
 loss_values = None
 if load_checkpoint:
   start_epoch, loss_values = get_checkpoint(checkpoint_folder=checkpoint_folder, 
-                                            classical_discriminator=classical_discriminator, 
-                                            generator=generator, 
-                                            optimizer_generator=optimizer_generator, 
-                                            optimizer_classical_discriminator=optimizer_classical_discriminator)
+                                            model_list=model_list,
+                                            optimizer_list=optimizer_list)
 
 # Train model
 if training:
   train_model(device=device, 
               num_epochs=num_epochs,
               train_loader=train_loader,
-              generator=generator, 
-              classical_discriminator=classical_discriminator, 
-              optimizer_generator=optimizer_generator,
-              optimizer_classical_discriminator=optimizer_classical_discriminator, 
+              model_list=model_list,
+              optimizer_list=optimizer_list,
               loss_function=loss_function,
               checkpoint_folder=checkpoint_folder,
               start_epoch=start_epoch,
               loss_values=loss_values,
-              checkpoint_interval=checkpoint_interval) 
+              checkpoint_interval=checkpoint_interval,
+              training_mode=training_mode) 
 
 # Generate sample
 if generate_data:
-  generate_sample(generator, device, batch_size=16)
+  generate_sample(model_list[0], device, batch_size=16)
 
 # Wait for user to close the plot
 plt.ioff()
