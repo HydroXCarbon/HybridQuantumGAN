@@ -1,8 +1,6 @@
-from visualization import PlotTrainingProgress
+from visualization import PlotTrainingProgress, ProgressBar
 
-import os
 import torch
-import matplotlib.pyplot as plt
 
 class LossValues:
   def __init__(self):
@@ -14,14 +12,14 @@ def train_model(device,
                 num_epochs, 
                 train_loader, 
                 model_list,
-                optimizer_list,
-                loss_function, 
+                optimizer_list, 
                 checkpoint_folder, 
                 start_epoch=0,
                 checkpoint_interval=5,
                 training_mode='alternating',
                 loss_values=LossValues()):
-
+  from features import save_checkpoint
+  
   if loss_values is None:
     loss_values = LossValues()
 
@@ -30,6 +28,9 @@ def train_model(device,
   optimizer_generator = optimizer_list[0]
   discriminator_list = model_list[1:]
   optimizer_discriminator_list = optimizer_list[1:]
+  num_discriminators = len(discriminator_list)
+  batch_size = train_loader.batch_size
+  total_batches = len(train_loader)
 
   # Create instant for plotting 
   plot_progress = PlotTrainingProgress()
@@ -37,7 +38,10 @@ def train_model(device,
   # Training loop
   print(f'Start training at epoch {start_epoch}')
   for epoch in range(start_epoch, num_epochs):
-    for n, (real_samples, mnist_labels) in enumerate(train_loader):
+    # Initialize tqdm progress bar
+    progress_bar = ProgressBar(total_batches, epoch, num_epochs)
+    
+    for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       # Data for training the discriminator
       real_samples = real_samples.to(device=device)
       real_samples_labels = torch.ones((train_loader.batch_size, 1)).to(device=device)
@@ -48,11 +52,12 @@ def train_model(device,
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
       # Training the discriminator
-      for discriminator, optimizer_discriminator in zip(discriminator_list, optimizer_discriminator_list):
+      for i, (discriminator, optimizer_discriminator) in enumerate(zip(discriminator_list, optimizer_discriminator_list)):
         discriminator.zero_grad()
+        optimizer_discriminator.zero_grad()
         output_discriminator = discriminator(all_samples)
-        loss_discriminator = loss_function(output_discriminator, all_samples_labels)
-        loss_discriminator.backward(retain_graph=True)
+        loss_discriminator = discriminator.loss_function(output_discriminator, all_samples_labels)
+        loss_discriminator.backward(retain_graph=True if i < num_discriminators - 1 else False)
         optimizer_discriminator.step()
 
         # Store discriminator loss for plotting
@@ -64,23 +69,23 @@ def train_model(device,
       latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
 
       # Training the generator
-      generator.zero_grad()
-      generated_samples = generator(latent_space_samples)
       if training_mode == 'combined':
-        for discriminator in discriminator_list:
-          output_discriminator_generated = discriminator(generated_samples)
-          if combined_output is None:
-              combined_output = output_discriminator_generated
-          else:
-              combined_output += output_discriminator_generated
+        generator.zero_grad()
+        generated_samples = generator(latent_space_samples)
+        combined_output = torch.zeros_like(discriminator(generated_samples))
+        for i, discriminator in enumerate(discriminator_list):
+            output_discriminator_generated = discriminator(generated_samples)
+            combined_output += output_discriminator_generated
         combined_output /= len(discriminator_list)
-        loss_generator = loss_function(combined_output, real_samples_labels)
+        loss_generator = generator.loss_function(combined_output, real_samples_labels)
         loss_generator.backward()
         optimizer_generator.step()
       elif training_mode == 'alternating':
         for discriminator in discriminator_list:
+          generator.zero_grad()
+          generated_samples = generator(latent_space_samples)
           output_discriminator_generated = discriminator(generated_samples)
-          loss_generator = loss_function(output_discriminator_generated, real_samples_labels)
+          loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
           loss_generator.backward()
           optimizer_generator.step()
       else:
@@ -90,24 +95,23 @@ def train_model(device,
       if generator.name not in loss_values.generator_loss_values:
         loss_values.generator_loss_values[generator.name] = []
       loss_values.generator_loss_values[generator.name].append(loss_generator.cpu().detach().numpy())
+
+      # Manually update the progress bar
+      progress_bar.update(1)
+
+    # Update and Close the progress bar
+    progress_bar_data = {'loss_G': f"{loss_values.generator_loss_values[generator.name][-1]:.5f}"}
+    for i, discriminator in enumerate(loss_values.discriminator_loss_values.keys()):
+      progress_bar_data[f'loss d_{i}'] = f"{loss_values.discriminator_loss_values[discriminator][-1]:.5f}"
+    progress_bar.set_postfix(progress_bar_data)
+    progress_bar.close()
         
-    # Show loss
-    plot_progress.plot(epoch, loss_values)
-    print(f"Training [{100 * epoch / num_epochs}%], Epoch: {epoch}, Loss G.: {loss_values.generator_loss_values[generator.name][-1]}")
+    # Plot progress
+    plot_progress.plot(epoch, num_epochs, loss_values)
 
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
-      checkpoint_path = os.path.join(checkpoint_folder, f'checkpoint.pth')
-      checkpoint = {
-          'epoch': epoch,
-          'loss_values': loss_values
-      }
+      save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
 
-      for model, optimizer in zip(model_list, optimizer_list):
-        checkpoint[f'{model.name}_state_dict'] = model.state_dict()
-        checkpoint[f'{optimizer.name}_state_dict'] = optimizer.state_dict()
-
-      # Save the checkpoint
-      torch.save(checkpoint, checkpoint_path)
-      print(f'Checkpoint saved at epoch {epoch}')
+  print('Training finished')
 

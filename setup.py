@@ -39,5 +39,6 @@ setup(
         "qiskit_ibm_runtime==0.24.1",
         "python-dotenv==1.0.1",
         "PyYAML==6.0.2",
+        "tqdm==4.66.5",
     ]
 )

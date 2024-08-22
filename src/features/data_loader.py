@@ -1,10 +1,10 @@
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
-import os
+from os import makedirs
 
 def get_data_loader(data_folder, batch_size=64, num_workers=2):
-  os.makedirs(data_folder, exist_ok=True)
+  makedirs(data_folder, exist_ok=True)
   transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))

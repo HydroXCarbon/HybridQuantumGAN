@@ -1,20 +1,3 @@
-Hyperparameters:
-  models:
-    generator:
-      learning_rate: 0.0002
-      model_class: Generator
-    classical_discriminator_1:
-      learning_rate: 0.00015
-      model_class: ClassicalDiscriminator
-    classical_discriminator_2:
-      learning_rate: 0.0002
-      model_class: ClassicalDiscriminator
-    #quantum_discriminator:
-    #  learning_rate: 0.00015
-    #  model_class: QuantumDiscriminator
-  num_epochs: 50
-  batch_size: 32
-
 Configuration:
   seed: 111
   checkpoint_interval: 5
@@ -23,3 +6,40 @@ Configuration:
   load_checkpoint: False
   training: True
   generate_data: True
+Hyperparameter:
+  num_epochs: 50
+  batch_size: 32
+  model_selector: 'generator,
+                  classical_discriminator_1, 
+                  classical_discriminator_2'
+  models:
+    generator:
+      learning_rate: 0.0002
+      betas: 0.9, 0.999
+      model_class: Generator # Select Class for model from models.py
+      loss_function: BCELoss
+      optimizer: Adam  # Recommend Adam or RMSprop
+    classical_discriminator_1:
+      learning_rate: 0.00015
+      betas: 0.9, 0.999
+      model_class: ClassicalDiscriminator
+      loss_function: BCELoss
+      optimizer: Adam
+    classical_discriminator_2:
+      learning_rate: 0.00015
+      betas: 0.9, 0.999
+      model_class: ClassicalDiscriminator
+      loss_function: BCELoss
+      optimizer: Adam
+    classical_discriminator_3:
+      learning_rate: 0.00015
+      betas: 0.9, 0.999
+      model_class: ClassicalDiscriminator
+      loss_function: BCELoss
+      optimizer: Adam
+    quantum_discriminator:
+      learning_rate: 0.00015
+      betas: 0.9, 0.999
+      model_class: QuantumDiscriminator
+      loss_function: NNLoss
+      optimizer: Adam
