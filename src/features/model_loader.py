@@ -9,9 +9,10 @@ def get_model(models, model_selector, device):
   model_selector = tuple(model.strip() for model in model_selector)
   
   # Initialize models dynamically
-  for model_name in models:
+  for i, model_name in enumerate(models):
     if model_name not in model_selector:
       continue
+    print(f"{'Loading model: ' if i == 0 else ', '}{model_name}", end='')
     learning_rate = models[model_name]['learning_rate']
     betas = models[model_name]['betas']
     betas = betas.split(',')
@@ -41,4 +42,5 @@ def get_model(models, model_selector, device):
     
     optimizer_list.append(optimizer_instance)
 
+  print()
   return model_list, optimizer_list

@@ -18,13 +18,11 @@ class HybridQuantumDiscriminator(nn.Module):
       nn.Flatten(),
       nn.Linear(256, 64),
       nn.ReLU(),
-      nn.Linear(64, 2) 
+      nn.Linear(64, 2) ,
+      TorchConnector(create_qnn()),
+      nn.Linear(1, 1)
     )
-    self.qnn = TorchConnector(create_qnn())
-    self.fc3 = nn.Linear(1, 1)
 
   def forward(self, x):
     x = self.model(x)
-    x = self.qnn(x) 
-    x = self.fc3(x)
     return x
