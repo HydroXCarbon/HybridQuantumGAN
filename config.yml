@@ -12,36 +12,37 @@ Hyperparameter:
   batch_size: 32
   # model selector can have only 1 generator at first index
   model_selector: 'generator,
-                  classical_discriminator_11, 
+                  classical_discriminator_1, 
+                  classical_discriminator_2, 
                   hybrid_quantum_discriminator_1,'
   models:
     generator:
       learning_rate: 0.0002
       betas: 0.9, 0.999
       model_class: Generator # Select Class for model from models.py
-      loss_function: BCELoss
+      loss_function: BCELoss  # Any Binary Classification Loss
       optimizer: Adam  # Recommend Adam or RMSprop
     classical_discriminator_1:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: ClassicalDiscriminator
+      model_class: ClassicalDiscriminator1
       loss_function: BCELoss
       optimizer: Adam
     classical_discriminator_2:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: ClassicalDiscriminator
+      model_class: ClassicalDiscriminator2
       loss_function: BCELoss
       optimizer: Adam
     hybrid_quantum_discriminator_1:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: HybridQuantumDiscriminator
+      model_class: HybridQuantumDiscriminator1
       loss_function: BCELoss
       optimizer: Adam
-    quantum_discriminator:
+    quantum_discriminator_1:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: QuantumDiscriminator
+      model_class: QuantumDiscriminator1
       loss_function: NLLLoss
       optimizer: Adam

@@ -8,7 +8,7 @@ def show_sample_data(sample, sample_size=0, title='Sample Data', epoch=0):
   cols = ceil(sqrt(sample_size))
   rows = ceil(sample_size / cols)
 
-  fig = plt.figure()
+  fig = plt.figure(figsize=(cols * 2, rows * 2))
   fig.canvas.manager.set_window_title(title) 
   for i in range(sample_size):
       plt.subplot(rows, cols, i + 1)

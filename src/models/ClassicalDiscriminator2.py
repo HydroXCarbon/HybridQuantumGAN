@@ -4,21 +4,21 @@ class ClassicalDiscriminator(nn.Module):
   def __init__(self):
     super().__init__()
     self.model = nn.Sequential(
-      nn.Linear(784, 1024),
+      nn.Conv2d(1, 2, kernel_size=5),
       nn.ReLU(),
-      nn.Dropout(0.3),
-      nn.Linear(1024, 512),
+      nn.MaxPool2d(kernel_size=2),
+      nn.Conv2d(2, 16, kernel_size=5),
       nn.ReLU(),
-      nn.Dropout(0.3),
-      nn.Linear(512, 256),
+      nn.MaxPool2d(kernel_size=2),
+      nn.Dropout2d(),
+      nn.Flatten(),
+      nn.Linear(256, 64),
       nn.ReLU(),
-      nn.Dropout(0.3),
-      nn.Linear(256, 1),
-      nn.Sigmoid(),
+      nn.Linear(64, 1),
+      nn.Sigmoid(), 
     )
 
   def forward(self, x):
-    x = x.view(x.size(0), 784)
     x = self.model(x)
     return x
     

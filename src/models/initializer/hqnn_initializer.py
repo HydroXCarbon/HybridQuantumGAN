@@ -8,7 +8,6 @@ def create_qnn():
     qc = QuantumCircuit(2)
     qc.compose(feature_map, inplace=True)
     qc.compose(ansatz, inplace=True)
-    # REMEMBER TO SET input_gradients=True FOR ENABLING HYBRID GRADIENT BACKPROP
     qnn = EstimatorQNN(
         circuit=qc,
         input_params=feature_map.parameters,

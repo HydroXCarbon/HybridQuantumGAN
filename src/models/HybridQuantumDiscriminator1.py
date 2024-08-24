@@ -1,12 +1,12 @@
-import torch
-from torch import nn, cat
+from torch import nn
 
 from qiskit_machine_learning.connectors import TorchConnector
-from .hqnn_initializer import create_qnn
+from .initializer.hqnn_initializer import create_qnn
 
 class HybridQuantumDiscriminator(nn.Module):
   def __init__(self):
     super().__init__()
+    qnn = create_qnn()
     self.model = nn.Sequential(
       nn.Conv2d(1, 2, kernel_size=5),
       nn.ReLU(),
@@ -18,9 +18,10 @@ class HybridQuantumDiscriminator(nn.Module):
       nn.Flatten(),
       nn.Linear(256, 64),
       nn.ReLU(),
-      nn.Linear(64, 2) ,
-      TorchConnector(create_qnn()),
-      nn.Linear(1, 1)
+      nn.Linear(64, 2),
+      #TorchConnector(qnn),
+      nn.Linear(2, 1),
+      nn.Sigmoid(), 
     )
 
   def forward(self, x):
