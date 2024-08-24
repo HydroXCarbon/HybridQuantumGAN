@@ -1,6 +1,6 @@
 import torch.optim as optim
 import torch.nn as nn
-from models import Generator, ClassicalDiscriminator, QuantumDiscriminator
+from models import Generator, ClassicalDiscriminator, QuantumDiscriminator, HybridQuantumDiscriminator
 
 def get_model(models, model_selector, device):
   model_list = []

@@ -13,7 +13,6 @@ def save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_v
 
   # Save the checkpoint
   save(checkpoint, checkpoint_path)
-  print(f'Checkpoint saved at epoch {epoch}')
 
 def get_checkpoint(checkpoint_folder, model_list, optimizer_list):
 	checkpoint_path = path.join(checkpoint_folder, 'checkpoint.pth')

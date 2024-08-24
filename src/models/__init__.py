@@ -1,4 +1,6 @@
 from .Generator import Generator
 from .ClassicalDiscriminator import ClassicalDiscriminator
 from .QuantumDiscriminator import QuantumDiscriminator
+from .HybridQuantumDiscriminator import HybridQuantumDiscriminator
 from .qnn_initializer import create_qnn
+from .hqnn_initializer import create_qnn

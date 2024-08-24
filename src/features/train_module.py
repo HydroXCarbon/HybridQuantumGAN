@@ -1,4 +1,5 @@
-from visualization import PlotTrainingProgress, ProgressBar
+from visualization import PlotTrainingProgress, show_sample_data
+from tqdm import tqdm
 
 import torch
 
@@ -14,12 +15,14 @@ def train_model(device,
                 model_list,
                 optimizer_list, 
                 checkpoint_folder, 
+                save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
                 training_mode='alternating',
-                loss_values=LossValues()):
+                loss_values=None):
   from features import save_checkpoint
-  
+  from visualization import generate_sample
+
   if loss_values is None:
     loss_values = LossValues()
 
@@ -30,6 +33,7 @@ def train_model(device,
   optimizer_discriminator_list = optimizer_list[1:]
   num_discriminators = len(discriminator_list)
   batch_size = train_loader.batch_size
+  generated_samples_list = []
   total_batches = len(train_loader)
 
   # Create instant for plotting 
@@ -37,9 +41,17 @@ def train_model(device,
 
   # Training loop
   print(f'Start training at epoch {start_epoch}')
+  # Initialize progress bar
+  progress_bar_epoch = tqdm(total=num_epochs-start_epoch, 
+                          desc=f"Model Progress", 
+                          unit="epoch",
+                          leave=True)
   for epoch in range(start_epoch, num_epochs):
-    # Initialize tqdm progress bar
-    progress_bar = ProgressBar(total_batches, epoch, num_epochs)
+    # Initialize batch progress bar
+    progress_bar_batch = tqdm(total=total_batches,
+                            desc=f"Training Epoch {epoch}",
+                            unit="batch",
+                            leave=False)
     
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       # Data for training the discriminator
@@ -68,7 +80,7 @@ def train_model(device,
       # Data for training the generator
       latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
 
-      # Training the generator
+      # Training the generator with selected mode
       if training_mode == 'combined':
         generator.zero_grad()
         generated_samples = generator(latent_space_samples)
@@ -97,21 +109,35 @@ def train_model(device,
       loss_values.generator_loss_values[generator.name].append(loss_generator.cpu().detach().numpy())
 
       # Manually update the progress bar
-      progress_bar.update(1)
+      progress_bar_batch.update()
 
     # Update and Close the progress bar
     progress_bar_data = {'loss_G': f"{loss_values.generator_loss_values[generator.name][-1]:.5f}"}
     for i, discriminator in enumerate(loss_values.discriminator_loss_values.keys()):
       progress_bar_data[f'loss d_{i}'] = f"{loss_values.discriminator_loss_values[discriminator][-1]:.5f}"
-    progress_bar.set_postfix(progress_bar_data)
-    progress_bar.close()
+    progress_bar_batch.set_postfix(progress_bar_data)
+    progress_bar_batch.close()
+    progress_bar_epoch.update()
         
     # Plot progress
     plot_progress.plot(epoch, num_epochs, loss_values)
+
+    # Save sample data at the specified interval
+    if (epoch + 1) % save_sample_interval == 0:
+      generated_samples = generate_sample(generator, device, 1)
+      generated_samples_list.append(generated_samples)
 
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
       save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
 
+  # Close the progress bar
+  progress_bar_epoch.close()
+
+  # Save final checkpoint
+  save_checkpoint(num_epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
+  
+  # Plot the evolution of the generator
+  show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=num_epochs-start_epoch)
   print('Training finished')
 

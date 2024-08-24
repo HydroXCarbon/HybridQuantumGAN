@@ -20,6 +20,7 @@ batch_size = Hyperparameter['batch_size']
 
 # Configuration Settings
 seed = Configuration['seed']
+save_sample_interval = Configuration['save_sample_interval']
 checkpoint_interval = Configuration['checkpoint_interval']
 training_mode = Configuration['training_mode']
 show_sample = Configuration['show_sample']
@@ -53,7 +54,7 @@ train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
 # Plot some training samples
 if show_sample:
   real_samples, labels = next(iter(train_loader))
-  show_sample_data(real_samples, sample_size=16)
+  show_sample_data(real_samples, title='Real Sample', sample_size=16)
 
 # Load checkpoint
 start_epoch, loss_values = 0, None
@@ -63,7 +64,7 @@ if load_checkpoint:
                                             optimizer_list=optimizer_list)
 
 # Train model
-if training:
+if training and num_epochs != start_epoch:
   train_model(device=device, 
               num_epochs=num_epochs,
               train_loader=train_loader,
@@ -73,11 +74,13 @@ if training:
               start_epoch=start_epoch,
               loss_values=loss_values,
               checkpoint_interval=checkpoint_interval,
+              save_sample_interval=save_sample_interval,
               training_mode=training_mode) 
 
 # Generate sample
 if generate_data:
-  generate_sample(model_list[0], device, batch_size=16)
+  generated_sample = generate_sample(model_list[0], device, sample_size=16)
+  show_sample_data(generated_sample, title='Generated Sample')
 
 # Wait for user to close the plot
 plt.ioff()

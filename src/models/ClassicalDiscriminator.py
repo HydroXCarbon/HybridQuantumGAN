@@ -19,6 +19,6 @@ class ClassicalDiscriminator(nn.Module):
 
   def forward(self, x):
     x = x.view(x.size(0), 784)
-    output = self.model(x)
-    return output
+    x = self.model(x)
+    return x
     
