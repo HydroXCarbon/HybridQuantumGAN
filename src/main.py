@@ -13,7 +13,37 @@ with open('config.yml', 'r') as file:
 Hyperparameter = config['Hyperparameter']
 Configuration = config['Configuration']
 
-# Hyperparameters (can have only 1 generator)
+# Start wandb logging
+if Configuration['log_wandb']:
+  wandb_config={
+        "architecture": "HQGAN",
+        "epochs": Hyperparameter['num_epochs'],
+        "batch_size": Hyperparameter['batch_size'],
+        "training_mode": Configuration['training_mode'],
+        "seed": Configuration['seed'],
+  }
+  wandb.init(
+    project="HybridQuantumGAN",
+    config=wandb_config
+  )
+  # Override local configuration with wandb config (sweep mode)
+  wandb_config = wandb.config
+  for key, value in wandb_config.items():
+    # Update Hyperparameter and Configuration
+    if key in ['epochs', 'batch_size', 'training_mode']:
+      if key in Hyperparameter:
+        Hyperparameter[key] = value
+      elif key in Configuration:
+        Configuration[key] = value
+    # Update model and optimizer learning rate
+    if  key.endswith('learning_rate'):
+      model_name = key.replace('_learning_rate', '')
+      if model_name in Hyperparameter['models']:
+        Hyperparameter['models'][model_name]['learning_rate'] = value
+else:
+  print("wandb logging is disabled.")
+
+# Hyperparameters
 model_selector = Hyperparameter['model_selector']
 models = Hyperparameter['models']
 num_epochs = Hyperparameter['num_epochs']
@@ -27,7 +57,10 @@ training_mode = Configuration['training_mode']
 show_sample = Configuration['show_sample']
 load_checkpoint = Configuration['load_checkpoint']
 training = Configuration['training']
+show_training_process = Configuration['show_training_process']
+show_training_evolution = Configuration['show_training_evolution']
 generate_data = Configuration['generate_data']
+log_wandb = Configuration['log_wandb']
 
 # Set up folders path
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -64,26 +97,13 @@ if load_checkpoint:
                                             model_list=model_list,
                                             optimizer_list=optimizer_list)
 
-# Check if wandb is logged in
-if wandb.api.api_key:
-  wandb_config={
-        "architecture": "HQGAN",
-        "epochs": num_epochs,
-        "batch_size": batch_size,
-        "num_models": len(model_list),
-        "models": model_list,
-        "optimizer": optimizer_list,
-        "training_mode": training_mode,
-        "seed": seed,
-  }
-  for model, optimizer in zip(model_list, optimizer_list):
-    wandb_config[f"{model.name}_learning_rate"] = optimizer.param_groups[0]['lr']
-  wandb.init(
-    project="QuantumGAN",
-    config=wandb_config
-  )
-else:
-    print("wandb is not logged in. Please log in to wandb to track the run.")
+# Update wandb config with models and optimizers
+if log_wandb:
+    wandb.config.update({
+      "num_models": len(model_list),
+      "models": model_list,
+      "optimizer": optimizer_list,
+    })
 
 # Train model
 if training and num_epochs != start_epoch:
@@ -97,7 +117,10 @@ if training and num_epochs != start_epoch:
               loss_values=loss_values,
               checkpoint_interval=checkpoint_interval,
               save_sample_interval=save_sample_interval,
-              training_mode=training_mode) 
+              training_mode=training_mode,
+              log_wandb=log_wandb,
+              show_training_process=show_training_process,
+              show_training_evolution=show_training_evolution) 
 
 # Generate sample
 if generate_data:

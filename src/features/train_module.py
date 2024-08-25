@@ -16,6 +16,9 @@ def train_model(device,
                 model_list,
                 optimizer_list, 
                 checkpoint_folder, 
+                log_wandb,
+                show_training_process,
+                show_training_evolution,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
@@ -78,7 +81,7 @@ def train_model(device,
             loss_values.discriminator_loss_values[discriminator.name] = []
         discriminator_loss = loss_discriminator.cpu().detach().numpy()
         loss_values.discriminator_loss_values[discriminator.name].append(discriminator_loss)
-        if wandb.api.api_key:
+        if log_wandb:
           wandb.log({f"{discriminator.name}_loss": discriminator_loss})
 
       # Data for training the generator
@@ -112,7 +115,7 @@ def train_model(device,
         loss_values.generator_loss_values[generator.name] = []
       generator_loss = loss_generator.cpu().detach().numpy()
       loss_values.generator_loss_values[generator.name].append(generator_loss)
-      if wandb.api.api_key:
+      if log_wandb:
         wandb.log({f"{generator.name}_loss": generator_loss})
 
       # Manually update the progress bar
@@ -127,7 +130,8 @@ def train_model(device,
     progress_bar_epoch.update()
         
     # Plot progress
-    plot_progress.plot(epoch, num_epochs, loss_values)
+    if show_training_process:
+      plot_progress.plot(epoch, num_epochs, loss_values)
 
     # Save sample data at the specified interval
     if (epoch + 1) % save_sample_interval == 0:
@@ -139,7 +143,7 @@ def train_model(device,
       save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
 
   # Finish the wandb run
-  if wandb.api.api_key:
+  if log_wandb:
     wandb.finish()
 
   # Close the progress bar
@@ -149,6 +153,7 @@ def train_model(device,
   save_checkpoint(num_epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
   
   # Plot the evolution of the generator
-  show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=num_epochs-start_epoch)
-  print('Training finished')
+  if show_training_evolution:
+    show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=num_epochs-start_epoch)
+    print('Training finished')
 

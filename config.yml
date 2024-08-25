@@ -1,12 +1,17 @@
 Configuration:
+  # Set up
   seed: 111  # Set seed
   save_sample_interval: 1   # Save sample every n epochs
   checkpoint_interval: 5  # Save model every n epochs 
   training_mode: alternating  # training mode 'alternating' or 'combined'
-  show_sample: False
   load_checkpoint: False
   training: True
   generate_data: True
+  # Visualization
+  log_wandb: True
+  show_training_process: True
+  show_training_evolution: True
+  show_sample: False
 Hyperparameter:
   num_epochs: 25
   batch_size: 32
