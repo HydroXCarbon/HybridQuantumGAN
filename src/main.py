@@ -5,6 +5,7 @@ import torch
 import os
 import yaml
 import matplotlib.pyplot as plt
+import wandb
 
 # Load the configuration file
 with open('config.yml', 'r') as file:
@@ -62,6 +63,27 @@ if load_checkpoint:
   start_epoch, loss_values = get_checkpoint(checkpoint_folder=checkpoint_folder, 
                                             model_list=model_list,
                                             optimizer_list=optimizer_list)
+
+# Check if wandb is logged in
+if wandb.api.api_key:
+  wandb_config={
+        "architecture": "HQGAN",
+        "epochs": num_epochs,
+        "batch_size": batch_size,
+        "num_models": len(model_list),
+        "models": model_list,
+        "optimizer": optimizer_list,
+        "training_mode": training_mode,
+        "seed": seed,
+  }
+  for model, optimizer in zip(model_list, optimizer_list):
+    wandb_config[f"{model.name}_learning_rate"] = optimizer.param_groups[0]['lr']
+  wandb.init(
+    project="QuantumGAN",
+    config=wandb_config
+  )
+else:
+    print("wandb is not logged in. Please log in to wandb to track the run.")
 
 # Train model
 if training and num_epochs != start_epoch:

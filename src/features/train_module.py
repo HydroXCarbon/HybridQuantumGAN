@@ -2,6 +2,7 @@ from visualization import PlotTrainingProgress, show_sample_data
 from tqdm import tqdm
 
 import torch
+import wandb
 
 class LossValues:
   def __init__(self):
@@ -61,7 +62,6 @@ def train_model(device,
       generated_samples = generator(latent_space_samples)
       generated_samples_labels = torch.zeros((train_loader.batch_size, 1)).to(device=device)
       all_samples = torch.cat((real_samples, generated_samples))
-      print(all_samples.shape)
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
       # Training the discriminator
@@ -76,7 +76,10 @@ def train_model(device,
         # Store discriminator loss for plotting
         if discriminator.name not in loss_values.discriminator_loss_values:
             loss_values.discriminator_loss_values[discriminator.name] = []
-        loss_values.discriminator_loss_values[discriminator.name].append(loss_discriminator.cpu().detach().numpy())
+        discriminator_loss = loss_discriminator.cpu().detach().numpy()
+        loss_values.discriminator_loss_values[discriminator.name].append(discriminator_loss)
+        if wandb.api.api_key:
+          wandb.log({f"{discriminator.name}_loss": discriminator_loss})
 
       # Data for training the generator
       latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
@@ -107,7 +110,10 @@ def train_model(device,
       # Store generator loss for plotting
       if generator.name not in loss_values.generator_loss_values:
         loss_values.generator_loss_values[generator.name] = []
-      loss_values.generator_loss_values[generator.name].append(loss_generator.cpu().detach().numpy())
+      generator_loss = loss_generator.cpu().detach().numpy()
+      loss_values.generator_loss_values[generator.name].append(generator_loss)
+      if wandb.api.api_key:
+        wandb.log({f"{generator.name}_loss": generator_loss})
 
       # Manually update the progress bar
       progress_bar_batch.update()
@@ -131,6 +137,10 @@ def train_model(device,
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
       save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
+
+  # Finish the wandb run
+  if wandb.api.api_key:
+    wandb.finish()
 
   # Close the progress bar
   progress_bar_epoch.close()

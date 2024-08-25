@@ -8,12 +8,12 @@ Configuration:
   training: True
   generate_data: True
 Hyperparameter:
-  num_epochs: 100
+  num_epochs: 25
   batch_size: 32
   # model selector can have only 1 generator at first index
   model_selector: 'generator,
-                  classical_discriminator_11, 
-                  classical_discriminator_2, 
+                  classical_discriminator_1, 
+                  classical_discriminator_22, 
                   hybrid_quantum_discriminator_11,'
   models:
     generator:

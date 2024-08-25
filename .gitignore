@@ -14,4 +14,7 @@ notebook/checkpoints/
 src/checkpoints/
 
 # Ignore the data directory
-/data
+data/
+
+# Ignore wandb directory
+wandb/
