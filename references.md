@@ -10,6 +10,9 @@
 ## Github
 1. [Implementation of Quantum convolutional neural network for classical data classification](https://github.com/takh04/QCNN)
 
+## Blog post
+1. [Designing Your Neural Networks](https://towardsdatascience.com/designing-your-neural-networks-a5e4617027ed)
+
 ## Documentation
 1. [The Quantum Convolution Neural Network](https://qiskit-community.github.io/qiskit-machine-learning/tutorials/11_quantum_convolutional_neural_networks.html)
 2. [Deep Convolutional Generative Adversarial Network (Tensor Flow)](https://www.tensorflow.org/tutorials/generative/dcgan#what_are_gans)
@@ -19,3 +22,4 @@
 1. [MIT Introduction to Deep Learning](http://introtodeeplearning.com/)
 2. [Coding With Qiskit - 1.x](https://www.youtube.com/playlist?list=PLOFEBzvs-VvrgHZt3exM_NNiNKtZlHvZi)
 3. [Understanding Quantum Information and Computation](https://www.youtube.com/playlist?list=PLOFEBzvs-VvqKKMXX4vbi4EB1uaErFMSO)
+4. [The Most Important Algorithm in Machine Learning](https://www.youtube.com/watch?v=SmZmBKc7Lrs)

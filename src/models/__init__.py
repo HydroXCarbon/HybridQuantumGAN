@@ -1,3 +1,5 @@
 from .Generator import Generator
-from .ClassicalDiscriminator import Discriminator as Cdiscriminator
-from .QuantumDiscriminator import Discriminator as Qdiscriminator
+from .ClassicalDiscriminator1 import ClassicalDiscriminator1
+from .ClassicalDiscriminator2 import ClassicalDiscriminator2
+from .QuantumDiscriminator1 import QuantumDiscriminator1
+from .HybridQuantumDiscriminator1 import HybridQuantumDiscriminator1
