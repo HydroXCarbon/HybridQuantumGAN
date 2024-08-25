@@ -61,6 +61,7 @@ def train_model(device,
       generated_samples = generator(latent_space_samples)
       generated_samples_labels = torch.zeros((train_loader.batch_size, 1)).to(device=device)
       all_samples = torch.cat((real_samples, generated_samples))
+      print(all_samples.shape)
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
       # Training the discriminator

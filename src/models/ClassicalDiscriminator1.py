@@ -1,9 +1,10 @@
 from torch import nn
 
-class ClassicalDiscriminator(nn.Module):
+class ClassicalDiscriminator1(nn.Module):
   def __init__(self):
     super().__init__()
     self.model = nn.Sequential(
+      nn.Flatten(),
       nn.Linear(784, 1024),
       nn.ReLU(),
       nn.Dropout(0.3),
