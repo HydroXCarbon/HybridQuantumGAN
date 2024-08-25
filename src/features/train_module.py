@@ -1,5 +1,6 @@
 from visualization import PlotTrainingProgress, show_sample_data
 from tqdm import tqdm
+from colorama import Fore, Style, init
 
 import torch
 import wandb
@@ -11,7 +12,7 @@ class LossValues:
     self.entropy_values = {}
 
 def train_model(device, 
-                num_epochs, 
+                epochs, 
                 train_loader, 
                 model_list,
                 optimizer_list, 
@@ -44,13 +45,13 @@ def train_model(device,
   plot_progress = PlotTrainingProgress()
 
   # Training loop
-  print(f'Start training at epoch {start_epoch}')
+  print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=num_epochs-start_epoch, 
+  progress_bar_epoch = tqdm(total=epochs-start_epoch, 
                           desc=f"Model Progress", 
                           unit="epoch",
                           leave=True)
-  for epoch in range(start_epoch, num_epochs):
+  for epoch in range(start_epoch, epochs):
     # Initialize batch progress bar
     progress_bar_batch = tqdm(total=total_batches,
                             desc=f"Training Epoch {epoch}",
@@ -131,7 +132,7 @@ def train_model(device,
         
     # Plot progress
     if show_training_process:
-      plot_progress.plot(epoch, num_epochs, loss_values)
+      plot_progress.plot(epoch, epochs, loss_values)
 
     # Save sample data at the specified interval
     if (epoch + 1) % save_sample_interval == 0:
@@ -141,6 +142,7 @@ def train_model(device,
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
       save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
+  print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   # Finish the wandb run
   if log_wandb:
@@ -150,10 +152,9 @@ def train_model(device,
   progress_bar_epoch.close()
 
   # Save final checkpoint
-  save_checkpoint(num_epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
+  save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
   
   # Plot the evolution of the generator
   if show_training_evolution:
-    show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=num_epochs-start_epoch)
-    print('Training finished')
+    show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=epochs-start_epoch)
 

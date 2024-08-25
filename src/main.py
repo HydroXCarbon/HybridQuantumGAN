@@ -1,5 +1,6 @@
 from features import get_data_loader, get_device, get_checkpoint, train_model, get_model
 from visualization import show_sample_data, generate_sample
+from colorama import Fore, Style, init
 
 import torch
 import os
@@ -17,7 +18,7 @@ Configuration = config['Configuration']
 if Configuration['log_wandb']:
   wandb_config={
         "architecture": "HQGAN",
-        "epochs": Hyperparameter['num_epochs'],
+        "epochs": Hyperparameter['epochs'],
         "batch_size": Hyperparameter['batch_size'],
         "training_mode": Configuration['training_mode'],
         "seed": Configuration['seed'],
@@ -41,12 +42,12 @@ if Configuration['log_wandb']:
       if model_name in Hyperparameter['models']:
         Hyperparameter['models'][model_name]['learning_rate'] = value
 else:
-  print("wandb logging is disabled.")
+  print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 
 # Hyperparameters
 model_selector = Hyperparameter['model_selector']
 models = Hyperparameter['models']
-num_epochs = Hyperparameter['num_epochs']
+epochs = Hyperparameter['epochs']
 batch_size = Hyperparameter['batch_size']
 
 # Configuration Settings
@@ -106,9 +107,9 @@ if log_wandb:
     })
 
 # Train model
-if training and num_epochs != start_epoch:
+if training and epochs != start_epoch:
   train_model(device=device, 
-              num_epochs=num_epochs,
+              epochs=epochs,
               train_loader=train_loader,
               model_list=model_list,
               optimizer_list=optimizer_list,

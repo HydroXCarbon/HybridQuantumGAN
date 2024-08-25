@@ -1,6 +1,7 @@
 import torch.optim as optim
 import torch.nn as nn
 from models import *
+from colorama import Fore, Style, init
 
 def get_model(models, model_selector, device):
   model_list = []
@@ -9,10 +10,11 @@ def get_model(models, model_selector, device):
   model_selector = tuple(model.strip() for model in model_selector)
   
   # Initialize models dynamically
+  print(Fore.GREEN + "Loading model: " + Style.RESET_ALL, end='')
   for i, model_name in enumerate(models):
     if model_name not in model_selector:
       continue
-    print(f"{'Loading model: ' if i == 0 else ', '}{model_name}", end='')
+    print(model_name, end=' ')
     learning_rate = models[model_name]['learning_rate']
     betas = models[model_name]['betas']
     betas = betas.split(',')

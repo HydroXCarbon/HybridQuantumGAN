@@ -15,7 +15,7 @@ class PlotTrainingProgress:
     self.ax2.set_ylabel("Relative entropy")
     self.ax2.grid()
 
-  def plot(self, epoch, num_epochs, loss_values):
+  def plot(self, epoch, epochs, loss_values):
     self.ax1.cla()
     self.ax2.cla()
 

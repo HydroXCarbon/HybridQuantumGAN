@@ -13,7 +13,7 @@ Configuration:
   show_training_evolution: True
   show_sample: False
 Hyperparameter:
-  num_epochs: 25
+  epochs: 25
   batch_size: 32
   # model selector can have only 1 generator at first index
   model_selector: 'generator,
