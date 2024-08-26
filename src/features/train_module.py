@@ -61,10 +61,10 @@ def train_model(device,
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       # Data for training the discriminator
       real_samples = real_samples.to(device=device)
-      real_samples_labels = torch.ones((train_loader.batch_size, 1)).to(device=device)
-      latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
+      real_samples_labels = torch.ones((batch_size, 1)).to(device=device)
+      latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
       generated_samples = generator(latent_space_samples)
-      generated_samples_labels = torch.zeros((train_loader.batch_size, 1)).to(device=device)
+      generated_samples_labels = torch.zeros((batch_size, 1)).to(device=device)
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
@@ -86,7 +86,7 @@ def train_model(device,
           wandb.log({f"{discriminator.name}_loss": discriminator_loss})
 
       # Data for training the generator
-      latent_space_samples = torch.randn((train_loader.batch_size, 100)).to(device=device)
+      latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
 
       # Training the generator with selected mode
       if training_mode == 'combined':

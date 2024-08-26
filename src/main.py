@@ -37,7 +37,7 @@ if Configuration['log_wandb']:
       elif key in Configuration:
         Configuration[key] = value
     # Update model and optimizer learning rate
-    if  key.endswith('learning_rate'):
+    elif key.endswith('learning_rate'):
       model_name = key.replace('_learning_rate', '')
       if model_name in Hyperparameter['models']:
         Hyperparameter['models'][model_name]['learning_rate'] = value

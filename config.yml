@@ -9,8 +9,8 @@ Configuration:
   generate_data: True
   # Visualization
   log_wandb: True
-  show_training_process: True
-  show_training_evolution: True
+  show_training_process: False
+  show_training_evolution: False
   show_sample: False
 Hyperparameter:
   epochs: 25
