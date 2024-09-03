@@ -1,6 +1,6 @@
 from features import get_data_loader, get_device, get_checkpoint, train_model, get_model
 from visualization import show_sample_data, generate_sample
-from colorama import Fore, Style, init
+from colorama import Fore, Style
 
 import torch
 import os
@@ -10,7 +10,7 @@ import wandb
 
 # Load the configuration file
 with open('config.yml', 'r') as file:
-    config = yaml.safe_load(file)
+  config = yaml.safe_load(file)
 Hyperparameter = config['Hyperparameter']
 Configuration = config['Configuration']
 
@@ -41,15 +41,15 @@ if Configuration['log_wandb']:
       model_name = key.replace('_learning_rate', '')
       if model_name in Hyperparameter['models']:
         Hyperparameter['models'][model_name]['learning_rate'] = value
+    
+    # Disable some visualization if using wandb sweep mode
+    if wandb.run.sweep_id is not None:
+      Configuration['show_training_process'] = False
+      Configuration['show_training_evolution'] = False
+      Configuration['show_sample'] = False
+      Configuration['generate_data'] = False
 else:
   print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
-
-# Disable some visualization if using wandb sweep mode
-if wandb.run.sweep_id is not None:
-  Configuration['show_training_process'] = False
-  Configuration['show_training_evolution'] = False
-  Configuration['show_sample'] = False
-  Configuration['generate_data'] = False
 
 # Hyperparameters
 model_selector = Hyperparameter['model_selector']
@@ -134,3 +134,7 @@ if training and epochs != start_epoch:
 if generate_data:
   generated_sample = generate_sample(model_list[0], device, sample_size=16)
   show_sample_data(generated_sample, title='Generated Sample')
+
+# Keep the plot open
+plt.ion()
+plt.show(block=True)

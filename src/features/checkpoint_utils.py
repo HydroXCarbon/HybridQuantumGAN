@@ -1,4 +1,5 @@
 from os import path
+from colorama import Fore, Style
 from torch import save, load
 
 def save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values):
@@ -31,6 +32,7 @@ def get_checkpoint(checkpoint_folder, model_list, optimizer_list):
 
 		# Load epoch
 		start_epoch = checkpoint['epoch'] + 1
-		print(f"Loading checkpoint from epoch {start_epoch - 1}")
+		print(Fore.GREEN + "Loading checkpoint: " + Style.RESET_ALL, end='')
+		print(f"epoch {start_epoch - 1}")
 		
 	return start_epoch, loss_values
