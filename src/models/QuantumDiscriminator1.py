@@ -5,7 +5,7 @@ from .initializer.qnn_initializer import create_qnn
 
 class QuantumDiscriminator1(nn.Module):
   def __init__(self):
-    super(QuantumDiscriminator, self).__init__()
+    super().__init__()
     qnn = create_qnn()
     self.qnn = TorchConnector(qnn)
 

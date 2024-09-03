@@ -4,10 +4,10 @@ Configuration:
   save_sample_interval: 1   # Save sample every n epochs
   checkpoint_interval: 5  # Save model every n epochs 
   training_mode: alternating  # training mode 'alternating' or 'combined'
-  load_checkpoint: False
-  training: True
+  load_checkpoint: True
+  training: False
   # Visualization
-  log_wandb: True
+  log_wandb: False
   show_training_process: True
   show_training_evolution: True
   generate_data: True

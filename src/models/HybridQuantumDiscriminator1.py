@@ -19,7 +19,7 @@ class HybridQuantumDiscriminator1(nn.Module):
       nn.Linear(256, 64),
       nn.ReLU(),
       nn.Linear(64, 2),
-      #TorchConnector(qnn),
+      TorchConnector(qnn),
       nn.Linear(2, 1),
       nn.Sigmoid(), 
     )

@@ -13,8 +13,11 @@ __pycache__/
 notebook/checkpoints/
 src/checkpoints/
 
-# Ignore the data directory
+# Data
 data/
 
-# Ignore wandb directory
+# Wandb 
 wandb/
+
+# Vscode 
+.vscode/
