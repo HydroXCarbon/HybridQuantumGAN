@@ -1,8 +1,8 @@
-# Quantum Generative Adversarial Networks (QGAN)
+# Hybrid Quantum Generative Adversarial Networks (HQGAN)
 
 ## Introduction
 
-This project explores the implementation and research of Quantum Generative Adversarial Networks (QGAN). QGAN is an innovative approach that combines the power of quantum computing with the generative capabilities of GANs to create quantum-enhanced generative models. This repository contains the code and resources needed to understand, implement, and experiment with QGANs.
+This project explores the implementation and research of Hybrid Quantum Generative Adversarial Networks (HQGAN). HQGAN is an innovative approach that combines the power of quantum computing with the generative capabilities of GANs to create quantum-enhanced generative models. This repository contains the code and resources needed to understand, implement, and experiment with HQGANs.
 
 ## Prerequisites
 
@@ -19,12 +19,12 @@ Follow the steps below to set up the environment and install the necessary packa
 ### 1. Create Conda Environment
 
 ```bash
-conda create --name qgan python=3.8
+conda create --name hqgan python=3.8
 ```
 
 ### 2. Activate Conda Environment
 ```bash
-conda activate qgan
+conda activate hqgan
 ```
 
 ### 3. Install requirement packages
@@ -32,3 +32,22 @@ conda activate qgan
 pip install .
 ```
 
+### 4. Run the Program
+
+You can run the program either through a Python script or a Jupyter notebook provided in the `src` folder. Additionally, you can configure various model settings in the `config.yml` file before running the program.
+
+**Option 1: Run using `main.py`**
+
+```bash
+python src/main.py
+```
+
+**Option 2: Run using `main.ipynb**
+If you prefer to run the program interactively, you can use Jupyter Notebook:
+
+```bash
+jupyter notebook src/main.ipynb
+```
+
+### Contributing
+Feel free to fork this repository and make your own contributions. Pull requests are welcome!
