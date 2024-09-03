@@ -43,6 +43,7 @@ python src/main.py
 ```
 
 **Option 2: Run using `main.ipynb`**
+
 If you prefer to run the program interactively, you can use Jupyter Notebook:
 
 ```bash
