@@ -44,6 +44,13 @@ if Configuration['log_wandb']:
 else:
   print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 
+# Disable some visualization if using wandb sweep mode
+if wandb.run.sweep_id is not None:
+  Configuration['show_training_process'] = False
+  Configuration['show_training_evolution'] = False
+  Configuration['show_sample'] = False
+  Configuration['generate_data'] = False
+
 # Hyperparameters
 model_selector = Hyperparameter['model_selector']
 models = Hyperparameter['models']
@@ -127,7 +134,3 @@ if training and epochs != start_epoch:
 if generate_data:
   generated_sample = generate_sample(model_list[0], device, sample_size=16)
   show_sample_data(generated_sample, title='Generated Sample')
-
-# Wait for user to close the plot
-plt.ioff()
-plt.show()
