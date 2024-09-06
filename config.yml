@@ -1,11 +1,12 @@
 Configuration:
   # Set up
-  seed: 111  # Set seed
+  device: cpu  # 'cuda' or 'cpu'
+  seed:   # Set seed
   save_sample_interval: 1   # Save sample every n epochs
   checkpoint_interval: 5  # Save model every n epochs 
-  training_mode: alternating  # training mode 'alternating' or 'combined'
-  load_checkpoint: True
-  training: False
+  training_mode: alternating  # training mode 'alternating' or 'combined' or 'continuous'
+  load_checkpoint: False
+  training: True
   # Visualization
   log_wandb: False
   show_training_process: True
@@ -16,17 +17,24 @@ Hyperparameter:
   epochs: 25
   batch_size: 32
   # model selector can have only 1 generator at first index
-  model_selector: 'generator,
+  model_selector: 'gan_generator_1,
+                  dcgan_generator_11,
                   classical_discriminator_1, 
                   classical_discriminator_22, 
                   hybrid_quantum_discriminator_11,'
   models:
-    generator:
+    gan_generator_1:
       learning_rate: 0.0002
       betas: 0.9, 0.999
-      model_class: Generator # Select Class for model from models.py
+      model_class: GAN_Generator # Select Class for model from models.py
       loss_function: BCELoss  # Any Binary Classification Loss
       optimizer: Adam  # Recommend Adam or RMSprop
+    dcgan_generator_1:
+      learning_rate: 0.0002
+      betas: 0.9, 0.999
+      model_class: DCGAN_Generator 
+      loss_function: BCELoss  
+      optimizer: Adam 
     classical_discriminator_1:
       learning_rate: 0.0001
       betas: 0.9, 0.999

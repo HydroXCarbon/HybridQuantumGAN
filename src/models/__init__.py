@@ -1,4 +1,5 @@
-from .Generator import Generator
+from .GAN_Generator import GAN_Generator
+from .DCGAN_Generator import DCGAN_Generator
 from .ClassicalDiscriminator1 import ClassicalDiscriminator1
 from .ClassicalDiscriminator2 import ClassicalDiscriminator2
 from .QuantumDiscriminator1 import QuantumDiscriminator1

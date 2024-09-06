@@ -1,8 +1,8 @@
 import torch.cuda
 from colorama import Fore, Style, init
 
-def get_device():
-  if torch.cuda.is_available():
+def get_device(device):
+  if torch.cuda.is_available() and device == 'cuda':
     device = torch.device("cuda")
     print(Fore.GREEN + 'Using cuda:' + Style.RESET_ALL , torch.cuda.get_device_name(device=device))
     return device

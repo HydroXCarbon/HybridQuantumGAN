@@ -101,13 +101,21 @@ def train_model(device,
         loss_generator.backward()
         optimizer_generator.step()
       elif training_mode == 'alternating':
+        discriminator = discriminator_list[epoch % num_discriminators]
+        generator.zero_grad()
+        generated_samples = generator(latent_space_samples)
+        output_discriminator_generated = discriminator(generated_samples)
+        loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
+        loss_generator.backward()
+        optimizer_generator.step()
+      elif training_mode == 'continuous':
         for discriminator in discriminator_list:
           generator.zero_grad()
           generated_samples = generator(latent_space_samples)
           output_discriminator_generated = discriminator(generated_samples)
           loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
           loss_generator.backward()
-          optimizer_generator.step()
+        optimizer_generator.step()
       else:
         raise ValueError(f"Training mode {training_mode} not supported")
 
