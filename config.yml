@@ -21,7 +21,7 @@ Hyperparameter:
                   dcgan_generator_11,
                   classical_discriminator_1, 
                   classical_discriminator_22, 
-                  hybrid_quantum_discriminator_11,'
+                  hybrid_quantum_discriminator_1,'
   models:
     gan_generator_1:
       learning_rate: 0.0002
