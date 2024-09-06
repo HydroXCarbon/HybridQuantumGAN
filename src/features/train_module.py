@@ -1,7 +1,6 @@
-from visualization import PlotTrainingProgress, show_sample_data
+from visualization import PlotTrainingProgress, PlotEvolution
 from tqdm import tqdm
 from colorama import Fore, Style, init
-
 import torch
 import wandb
 
@@ -10,6 +9,40 @@ class LossValues:
     self.generator_loss_values = {}
     self.discriminator_loss_values = {}
     self.entropy_values = {}
+
+def train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph):
+  discriminator.zero_grad()
+  optimizer_discriminator.zero_grad()
+  output_discriminator = discriminator(all_samples)
+  loss_discriminator = discriminator.loss_function(output_discriminator, all_samples_labels)
+  loss_discriminator.backward(retain_graph=retain_graph)
+  optimizer_discriminator.step()
+  return loss_discriminator
+
+def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
+  generator.zero_grad()
+  generated_samples = generator(latent_space_samples)
+  
+  if training_mode == 'combined':
+    combined_output = torch.zeros_like(discriminator_list[0](generated_samples))
+    for discriminator in discriminator_list:
+      combined_output += discriminator(generated_samples)
+    combined_output /= len(discriminator_list)
+    loss_generator = generator.loss_function(combined_output, real_samples_labels)
+  elif training_mode == 'alternating':
+    discriminator = discriminator_list[epoch % num_discriminators]
+    output_discriminator_generated = discriminator(generated_samples)
+    loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
+  elif training_mode == 'continuous':
+    for discriminator in discriminator_list:
+      output_discriminator_generated = discriminator(generated_samples)
+      loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
+  else:
+    raise ValueError(f"Training mode {training_mode} not supported")
+
+  loss_generator.backward()
+  optimizer_generator.step()
+  return loss_generator
 
 def train_model(device, 
                 epochs, 
@@ -40,26 +73,23 @@ def train_model(device,
   batch_size = train_loader.batch_size
   generated_samples_list = []
   total_batches = len(train_loader)
-
-  # Create instant for plotting 
+      
+  # Create instance for plotting
   plot_progress = PlotTrainingProgress()
+  if show_training_evolution:
+    plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Training loop
   print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+  
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs-start_epoch, 
-                          desc=f"Model Progress", 
-                          unit="epoch",
-                          leave=True)
-  for epoch in range(start_epoch, epochs):
-    # Initialize batch progress bar
-    progress_bar_batch = tqdm(total=total_batches,
-                            desc=f"Training Epoch {epoch}",
-                            unit="batch",
-                            leave=False)
-    
+  progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Model Progress", unit="epoch", leave=True)
+  
+  for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
+      # Initialize batch progress bar
+    progress_bar_batch = tqdm(total=total_batches, desc=f"Training Epoch {epoch}", unit="batch", leave=False)
+      
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
-      # Data for training the discriminator
       real_samples = real_samples.to(device=device)
       real_samples_labels = torch.ones((batch_size, 1)).to(device=device)
       latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
@@ -68,66 +98,31 @@ def train_model(device,
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
-      # Training the discriminator
+      # Training the discriminators
       for i, (discriminator, optimizer_discriminator) in enumerate(zip(discriminator_list, optimizer_discriminator_list)):
-        discriminator.zero_grad()
-        optimizer_discriminator.zero_grad()
-        output_discriminator = discriminator(all_samples)
-        loss_discriminator = discriminator.loss_function(output_discriminator, all_samples_labels)
-        loss_discriminator.backward(retain_graph=True if i < num_discriminators - 1 else False)
-        optimizer_discriminator.step()
-
-        # Store discriminator loss for plotting
+        retain_graph = i < num_discriminators - 1
+        loss_discriminator = train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph)
+        loss_discriminator = loss_discriminator.cpu().detach().numpy()
+        
         if discriminator.name not in loss_values.discriminator_loss_values:
-            loss_values.discriminator_loss_values[discriminator.name] = []
-        discriminator_loss = loss_discriminator.cpu().detach().numpy()
-        loss_values.discriminator_loss_values[discriminator.name].append(discriminator_loss)
+          loss_values.discriminator_loss_values[discriminator.name] = []
+        loss_values.discriminator_loss_values[discriminator.name].append(loss_discriminator)
+        
         if log_wandb:
-          wandb.log({f"{discriminator.name}_loss": discriminator_loss})
+          wandb.log({f"{discriminator.name}_loss": loss_discriminator})
 
-      # Data for training the generator
-      latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
-
-      # Training the generator with selected mode
-      if training_mode == 'combined':
-        generator.zero_grad()
-        generated_samples = generator(latent_space_samples)
-        combined_output = torch.zeros_like(discriminator(generated_samples))
-        for i, discriminator in enumerate(discriminator_list):
-            output_discriminator_generated = discriminator(generated_samples)
-            combined_output += output_discriminator_generated
-        combined_output /= len(discriminator_list)
-        loss_generator = generator.loss_function(combined_output, real_samples_labels)
-        loss_generator.backward()
-        optimizer_generator.step()
-      elif training_mode == 'alternating':
-        discriminator = discriminator_list[epoch % num_discriminators]
-        generator.zero_grad()
-        generated_samples = generator(latent_space_samples)
-        output_discriminator_generated = discriminator(generated_samples)
-        loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
-        loss_generator.backward()
-        optimizer_generator.step()
-      elif training_mode == 'continuous':
-        for discriminator in discriminator_list:
-          generator.zero_grad()
-          generated_samples = generator(latent_space_samples)
-          output_discriminator_generated = discriminator(generated_samples)
-          loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
-          loss_generator.backward()
-        optimizer_generator.step()
-      else:
-        raise ValueError(f"Training mode {training_mode} not supported")
-
-      # Store generator loss for plotting
+      # Training the generator
+      loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
+      generator_loss = loss_generator.cpu().detach().numpy()
+          
       if generator.name not in loss_values.generator_loss_values:
         loss_values.generator_loss_values[generator.name] = []
-      generator_loss = loss_generator.cpu().detach().numpy()
       loss_values.generator_loss_values[generator.name].append(generator_loss)
+      
       if log_wandb:
         wandb.log({f"{generator.name}_loss": generator_loss})
 
-      # Manually update the progress bar
+      # Update the progress bar
       progress_bar_batch.update()
 
     # Update and Close the progress bar
@@ -137,10 +132,10 @@ def train_model(device,
     progress_bar_batch.set_postfix(progress_bar_data)
     progress_bar_batch.close()
     progress_bar_epoch.update()
-        
+      
     # Plot progress
     if show_training_process:
-      plot_progress.plot(epoch, epochs, loss_values)
+      plot_progress.plot(epoch, loss_values)
 
     # Save sample data at the specified interval
     if (epoch + 1) % save_sample_interval == 0:
@@ -150,6 +145,12 @@ def train_model(device,
     # Save checkpoint at the specified interval
     if (epoch + 1) % checkpoint_interval == 0:
       save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
+
+    # Plot the evolution of the generator
+    if show_training_evolution:
+      plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
+
+  # Finish training
   print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   # Finish the wandb run
@@ -161,8 +162,3 @@ def train_model(device,
 
   # Save final checkpoint
   save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
-  
-  # Plot the evolution of the generator
-  if show_training_evolution:
-    show_sample_data(generated_samples_list, title='Evolution of Generator', epoch=epochs-start_epoch)
-

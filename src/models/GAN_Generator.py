@@ -10,6 +10,10 @@ class GAN_Generator(nn.Module):
       nn.ReLU(),
       nn.Linear(512, 1024),
       nn.ReLU(),
+      nn.Linear(1024, 2048),
+      nn.ReLU(),
+      nn.Linear(2048, 1024),
+      nn.ReLU(),
       nn.Linear(1024, 784),
       nn.Tanh(),
     )
