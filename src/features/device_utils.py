@@ -8,7 +8,7 @@ def get_device(device):
     return device
   elif device == 'cpu':
     device = torch.device("cpu")
-    print(Fore.GREEN+ 'Using cpu:' + Style.RESET_ALL + ' CPU')
+    print(Fore.GREEN+ 'Using cpu (force):' + Style.RESET_ALL + ' CPU')
     return device
   else:
     device = torch.device("cpu")

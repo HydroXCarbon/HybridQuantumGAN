@@ -1,6 +1,6 @@
 Configuration:
   # Set up
-  device: cpu  # 'cuda' or 'cpu'
+  device: cuda  # 'cuda' or 'cpu'
   seed:   # Set seed
   save_sample_interval: 1   # Save sample every n epochs
   checkpoint_interval: 5  # Save model every n epochs 
@@ -14,14 +14,14 @@ Configuration:
   generate_data: True
   show_sample: False
 Hyperparameter:
-  epochs: 25
-  batch_size: 32
+  epochs: 50
+  batch_size: 128
   # model selector can have only 1 generator at first index
   model_selector: 'gan_generator_1,
                   dcgan_generator_11,
                   classical_discriminator_1, 
-                  classical_discriminator_22, 
-                  hybrid_quantum_discriminator_1,'
+                  classical_discriminator_21, 
+                  hybrid_quantum_discriminator_11,'
   models:
     gan_generator_1:
       learning_rate: 0.0002

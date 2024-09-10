@@ -10,7 +10,7 @@ class PlotEvolution:
     cols = ceil(sqrt(epochs))
     rows = ceil(epochs / cols)
     
-    self.fig, self.axes = plt.subplots(rows, cols, figsize=(18, 9))
+    self.fig, self.axes = plt.subplots(rows, cols, figsize=(18, 14))
     self.fig.canvas.manager.set_window_title('Training Evolution') 
     for ax in self.axes.flatten():
       ax.set_xticks([])

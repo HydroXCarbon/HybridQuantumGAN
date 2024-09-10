@@ -1,6 +1,6 @@
 from visualization import PlotTrainingProgress, PlotEvolution
 from tqdm import tqdm
-from colorama import Fore, Style, init
+from colorama import Fore, Style
 import torch
 import wandb
 
@@ -86,7 +86,7 @@ def train_model(device,
   progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Model Progress", unit="epoch", leave=True)
   
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
-      # Initialize batch progress bar
+    # Initialize batch progress bar
     progress_bar_batch = tqdm(total=total_batches, desc=f"Training Epoch {epoch}", unit="batch", leave=False)
       
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
@@ -150,15 +150,15 @@ def train_model(device,
     if show_training_evolution:
       plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
+  # Close the progress bar
+  progress_bar_epoch.close()
+
   # Finish training
   print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   # Finish the wandb run
   if log_wandb:
     wandb.finish()
-
-  # Close the progress bar
-  progress_bar_epoch.close()
 
   # Save final checkpoint
   save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
