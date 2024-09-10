@@ -10,5 +10,5 @@ def get_data_loader(data_folder, batch_size=64):
     transforms.Normalize((0.5,), (0.5,))
   ])
   trainset = datasets.MNIST(root=data_folder, train=True, download=True, transform=transform)
-  trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+  trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4, prefetch_factor=2)
   return trainloader
