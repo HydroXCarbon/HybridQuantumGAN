@@ -58,6 +58,7 @@ epochs = Hyperparameter['epochs']
 batch_size = Hyperparameter['batch_size']
 
 # Configuration Settings
+device = Configuration['device']
 seed = Configuration['seed']
 save_sample_interval = Configuration['save_sample_interval']
 checkpoint_interval = Configuration['checkpoint_interval']
@@ -85,7 +86,7 @@ if seed is not None:
   #algorithm_globals.random_seed = seed
 
 # Use cuda if available
-device = get_device()
+device = get_device(device)
 
 # Load models
 model_list, optimizer_list = get_model(models, model_selector, device)

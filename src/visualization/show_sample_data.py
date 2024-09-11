@@ -6,6 +6,8 @@ def show_sample_data(sample, sample_size=0, title='Sample Data', epoch=0):
     sample_size = len(sample)
   # Calculate the number of rows and columns
   cols = ceil(sqrt(sample_size))
+  if cols == 0:
+    cols = 1
   rows = ceil(sample_size / cols)
 
   fig = plt.figure(figsize=(cols * 2, rows * 2))
