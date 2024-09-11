@@ -1,12 +1,13 @@
 Configuration:
   # Set up
-  device: cuda:0  # 'cuda:0' or 'cpu'
+  device: cpu  # 'cuda:0' or 'cpu'
   seed:   # Set seed
   save_sample_interval: 1   # Save sample every n epochs
   checkpoint_interval: 5  # Save model every n epochs 
   training_mode: alternating  # training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
   training: True
+  world_size: 2 # Number of Processes (DDP)
   # Visualization
   log_wandb: False
   show_training_process: False
@@ -18,10 +19,10 @@ Hyperparameter:
   batch_size: 128
   # model selector can have only 1 generator at first index
   model_selector: 'GAN_generator,
-                  DCGAN_generator,
-                  FLC_classical_discriminator, 
-                  CNN_classical_discriminator, 
-                  Hybrid_quantum_discriminator,'
+                  DCGAN_generator1,
+                  FCL_classical_discriminator, 
+                  CNN_classical_discriminator1, 
+                  Hybrid_quantum_discriminator1,'
   models:
     GAN_generator:
       learning_rate: 0.0002
@@ -35,10 +36,10 @@ Hyperparameter:
       model_class: DCGAN_Generator 
       loss_function: BCELoss  
       optimizer: Adam 
-    FLC_classical_discriminator:
+    FCL_classical_discriminator:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: FLC_Classical_Discriminator1
+      model_class: FCL_Classical_Discriminator1
       loss_function: BCELoss
       optimizer: Adam
     CNN_classical_discriminator:
