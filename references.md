@@ -20,6 +20,7 @@
 1. [The Quantum Convolution Neural Network](https://qiskit-community.github.io/qiskit-machine-learning/tutorials/11_quantum_convolutional_neural_networks.html)
 2. [Deep Convolutional Generative Adversarial Network (Tensor Flow)](https://www.tensorflow.org/tutorials/generative/dcgan#what_are_gans)
 3. [Generative Adversarial Networks: Build Your First Models](https://realpython.com/generative-adversarial-networks/#discriminative-vs-generative-models)
+3. [Writing Distributed Applications with PyTorch](https://pytorch.org/tutorials/intermediate/dist_tuto.html)
 
 ## Video
 1. [MIT Introduction to Deep Learning](http://introtodeeplearning.com/)
