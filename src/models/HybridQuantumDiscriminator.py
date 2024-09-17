@@ -3,7 +3,7 @@ from torch import nn
 from qiskit_machine_learning.connectors import TorchConnector
 from .initializer.hqnn_initializer import create_qnn
 
-class HybridQuantumDiscriminator1(nn.Module):
+class HybridQuantumDiscriminator(nn.Module):
   def __init__(self):
     super().__init__()
     qnn = create_qnn()

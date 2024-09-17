@@ -49,6 +49,12 @@ def train_generator(generator, discriminator_list, optimizer_generator, latent_s
   optimizer_generator.step()
   return loss_generator
 
+def denormalize_and_convert_uint8(images):
+  images = (images * 0.5 + 0.5) * 255.0  
+  images = images.clamp(0, 255) 
+  images = images.to(torch.uint8) 
+  return images
+
 def train_model(rank, 
                 world_size,
                 device, 
@@ -155,8 +161,8 @@ def train_model(rank,
       progress_bar_batch.update()
 
       # Denormalize and convert real and generated samples to uint8
-      real_samples_uint8 = denormalize_and_convert_uint8(real_samples)
-      generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples)
+      real_samples_uint8 = denormalize_and_convert_uint8(real_samples).repeat(1, 3, 1, 1)
+      generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
 
       # Accumulate FID (real and generated samples) for this batch
       fid.update(real_samples_uint8, real=True)
