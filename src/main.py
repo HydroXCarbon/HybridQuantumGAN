@@ -1,4 +1,4 @@
-from features import get_data_loader, get_device, get_checkpoint, train_model, get_model
+from features import get_data_loader, get_device, get_checkpoint, train_model, get_model, load_configuration, load_hyperparameters
 from visualization import show_sample_data, generate_sample
 from colorama import Fore, Style
 
@@ -46,35 +46,23 @@ def main():
       
       # Disable some visualization if using wandb sweep mode
       if wandb.run.sweep_id is not None:
-        Configuration['show_training_process'] = False
-        Configuration['show_training_evolution'] = False
-        Configuration['show_sample'] = False
-        Configuration['generate_data'] = False
+        Configuration.update({
+          'show_training_process': False,
+          'show_training_evolution': False,
+          'show_sample': False,
+          'generate_data': False
+        })
   else:
     print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 
-  # Hyperparameters
-  model_selector = Hyperparameter['model_selector']
-  models = Hyperparameter['models']
-  epochs = Hyperparameter['epochs']
-  batch_size = Hyperparameter['batch_size']
+  #Load Hyperparameters
+  model_selector, models, epochs, batch_size = load_hyperparameters(Hyperparameter)
 
-  # Configuration Settings
-  device = Configuration['device']
-  seed = Configuration['seed']
-  save_sample_interval = Configuration['save_sample_interval']
-  checkpoint_interval = Configuration['checkpoint_interval']
-  training_mode = Configuration['training_mode']
-  show_sample = Configuration['show_sample']
-  load_checkpoint = Configuration['load_checkpoint']
-  training = Configuration['training']
-  world_size = Configuration['world_size']
-  show_training_process = Configuration['show_training_process']
-  calculate_FID_score = Configuration['calculate_FID_score']
-  calculate_FID_interval = Configuration['calculate_FID_interval']
-  show_training_evolution = Configuration['show_training_evolution']
-  generate_data = Configuration['generate_data']
-  log_wandb = Configuration['log_wandb']
+  # Load Configuration Settings
+  (device, save_sample_interval, checkpoint_interval, training_mode, 
+  show_training_sample, load_checkpoint, training, world_size, 
+  show_training_process, calculate_FID_score, calculate_FID_interval, 
+  show_training_evolution, generate_data, log_wandb) = load_configuration(Configuration)
 
   # Set up distributed training
   os.environ['MASTER_ADDR'] = 'localhost'
@@ -89,11 +77,6 @@ def main():
   os.makedirs(checkpoint_folder, exist_ok=True)
   os.makedirs(data_folder, exist_ok=True)
 
-  # Set seed
-  if seed is not None:
-    torch.manual_seed(seed)
-    #algorithm_globals.random_seed = seed
-
   # Use cuda if available
   device = get_device(device)
 
@@ -104,7 +87,7 @@ def main():
   train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
 
   # Plot some training samples
-  if show_sample:
+  if show_training_sample:
     real_samples, labels = next(iter(train_loader))
     show_sample_data(real_samples, title='Real Sample', sample_size=16)
 

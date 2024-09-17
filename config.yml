@@ -1,10 +1,10 @@
 Configuration:
   # Preprocessing
-  device: cuda:0  # 'cuda:0' or 'cpu'
-  seed:   # Set seed
-  save_sample_interval: 1   # Save sample every n epochs (to see evolution of model)
-  checkpoint_interval: 5  # Save model every n epochs 
-  training_mode: alternating  # Training mode 'alternating' or 'combined' or 'continuous'
+  device: cuda:0 # 'cuda:0' or 'cpu'
+  seed: # Set seed
+  save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
+  checkpoint_interval: 5 # Save model every n epochs
+  training_mode: alternating # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
   world_size: 1 # Maximum umber of Processes (DDP)
   #Train
@@ -16,29 +16,29 @@ Configuration:
   calculate_FID_interval: 5
   show_training_evolution: False
   generate_data: False
-  show_sample: False
+  show_training_sample: False
 Hyperparameter:
   epochs: 50
   batch_size: 128
   # model selector can have only 1 generator at first index
-  model_selector: 'GAN_generator,
-                  DCGAN_generator1,
-                  FCL_classical_discriminator, 
-                  CNN_classical_discriminator1, 
-                  Hybrid_quantum_discriminator1,'
+  model_selector: "GAN_generator,
+    DCGAN_generator1,
+    FCL_classical_discriminator,
+    CNN_classical_discriminator1,
+    Hybrid_quantum_discriminator1,"
   models:
     GAN_generator:
       learning_rate: 0.0002
       betas: 0.9, 0.999
       model_class: GAN_Generator # Select Class for model from models.py
-      loss_function: BCELoss  # Any Binary Classification Loss
-      optimizer: Adam  # Recommend Adam or RMSprop
+      loss_function: BCELoss # Any Binary Classification Loss
+      optimizer: Adam # Recommend Adam or RMSprop
     DCGAN_generator:
       learning_rate: 0.0002
       betas: 0.9, 0.999
-      model_class: DCGAN_Generator 
-      loss_function: BCELoss  
-      optimizer: Adam 
+      model_class: DCGAN_Generator
+      loss_function: BCELoss
+      optimizer: Adam
     FCL_classical_discriminator:
       learning_rate: 0.0001
       betas: 0.9, 0.999
