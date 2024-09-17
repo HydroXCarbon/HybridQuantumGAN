@@ -1,5 +1,7 @@
 from visualization import PlotTrainingProgress, PlotEvolution
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torchmetrics.image.fid import FrechetInceptionDistance
+
 from tqdm import tqdm
 from colorama import Fore, Style
 
@@ -67,14 +69,18 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Initialize DistributedDataParallel
-  dist.init_process_group(backend='gloo', rank=rank, world_size=world_size)
-
+  backend = 'gloo' if device == 'cpu' else 'nccl'
+    
+  dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
   if loss_values is None:
     loss_values = LossValues()
 
   # Fix bug Optimizer.name disappears
   for optimizer, model in zip(optimizer_list, model_list):
     optimizer.name = 'optimizer_' + model.name
+
+  # Initialize FID metric
+  fid = FrechetInceptionDistance(feature=64).to(device)
 
   # Setup models
   generator = model_list[0]
@@ -91,24 +97,27 @@ def train_model(rank,
   batch_size = train_loader.batch_size
   generated_samples_list = []
   total_batches = len(train_loader)
+  fid_score = []
     
   # Create instance for plotting
   if rank == 0:
     # Training loop
     print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
-    
+
     plot_progress = PlotTrainingProgress()
     if show_training_evolution:
       plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Model Progress", unit="epoch", leave=True)
-  
-  for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
+  progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank*2)
+  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+1)
 
-    # Initialize batch progress bar
-    progress_bar_batch = tqdm(total=total_batches, desc=f"Training Epoch {epoch}", unit="batch", leave=False)
-      
+  for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
+    # Clear progress bar at the beginning of each epoch
+    progress_bar_batch.reset()
+    # Clear FID metrics at the beginning of each epoch
+    fid.reset()
+
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       real_samples = real_samples.to(device=device)
       real_samples_labels = torch.ones((batch_size, 1)).to(device=device)
@@ -145,19 +154,27 @@ def train_model(rank,
       # Update the progress bar
       progress_bar_batch.update()
 
-    # Update and Close the progress bar
-    progress_bar_data = {'loss_G': f"{loss_values.generator_loss_values[generator.module.name][-1]:.5f}"}
-    for i, discriminator in enumerate(loss_values.discriminator_loss_values.keys()):
-      progress_bar_data[f'loss d_{i}'] = f"{loss_values.discriminator_loss_values[discriminator][-1]:.5f}"
-    progress_bar_batch.set_postfix(progress_bar_data)
-    progress_bar_batch.close()
+      # Denormalize and convert real and generated samples to uint8
+      real_samples_uint8 = denormalize_and_convert_uint8(real_samples)
+      generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples)
+
+      # Accumulate FID (real and generated samples) for this batch
+      fid.update(real_samples_uint8, real=True)
+      fid.update(generated_samples_uint8, real=False)
+
+    # Calculate FID score
+    fid_score.append(fid.compute())
+    if log_wandb:
+        wandb.log({"FID": fid_score[-1]})
+
+    # Update the progress bar
     progress_bar_epoch.update()
 
     if rank == 0:
       
       # Plot progress
       if show_training_process:
-        plot_progress.plot(epoch, loss_values)
+        plot_progress.plot(epoch, loss_values, fid_score)
 
       # Save sample data at the specified interval
       if (epoch + 1) % save_sample_interval == 0:
@@ -173,6 +190,7 @@ def train_model(rank,
         plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
   # Close the progress bar
+  progress_bar_batch.close()
   progress_bar_epoch.close()
 
   if rank == 0:

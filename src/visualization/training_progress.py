@@ -15,7 +15,7 @@ class PlotTrainingProgress:
     self.ax2.set_ylabel("Relative entropy")
     self.ax2.grid()
 
-  def plot(self, epoch, loss_values):
+  def plot(self, epoch, loss_values, fid_score):
     self.ax1.cla()
     self.ax2.cla()
 
@@ -32,14 +32,9 @@ class PlotTrainingProgress:
 
     self.ax1.legend(loc="best")
 
-    self.ax2.set_title(f"Discriminator Loss (Epoch {epoch})")
-    for discriminator in loss_values.discriminator_loss_values:
-      values = loss_values.discriminator_loss_values[discriminator]
-      self.ax2.plot(values, label=discriminator, alpha=0.5)
-
-    self.ax2.legend(loc="best")
-
-    
+    self.ax2.set_title(f"FID Score (Epoch {epoch})")
+    self.ax2.plot(fid_score, alpha=0.5)
+    self.ax2.legend(loc="best")    
 
     self.fig.canvas.draw()
     plt.pause(0.1)
