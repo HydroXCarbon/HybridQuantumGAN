@@ -1,16 +1,19 @@
 Configuration:
-  # Set up
+  # Preprocessing
   device: cuda:0  # 'cuda:0' or 'cpu'
   seed:   # Set seed
   save_sample_interval: 1   # Save sample every n epochs (to see evolution of model)
   checkpoint_interval: 5  # Save model every n epochs 
-  training_mode: alternating  # training mode 'alternating' or 'combined' or 'continuous'
+  training_mode: alternating  # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
+  world_size: 1 # Maximum umber of Processes (DDP)
+  #Train
   training: True
-  world_size: 1 # Number of Processes (DDP)
-  # Visualization
+  # Evaluation
   log_wandb: False
   show_training_process: True
+  calculate_FID_score: True # This part take long time
+  calculate_FID_interval: 5
   show_training_evolution: False
   generate_data: False
   show_sample: False

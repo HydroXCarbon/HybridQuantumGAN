@@ -70,6 +70,8 @@ def main():
   training = Configuration['training']
   world_size = Configuration['world_size']
   show_training_process = Configuration['show_training_process']
+  calculate_FID_score = Configuration['calculate_FID_score']
+  calculate_FID_interval = Configuration['calculate_FID_interval']
   show_training_evolution = Configuration['show_training_evolution']
   generate_data = Configuration['generate_data']
   log_wandb = Configuration['log_wandb']
@@ -125,7 +127,7 @@ def main():
   if training and epochs != start_epoch:
     mp.spawn(
           train_model,
-          args=(world_size, device, epochs, train_loader, model_list, optimizer_list, checkpoint_folder, log_wandb, show_training_process, show_training_evolution, save_sample_interval, start_epoch, checkpoint_interval, training_mode, loss_values),
+          args=(world_size, device, epochs, train_loader, model_list, optimizer_list, checkpoint_folder, log_wandb, show_training_process, show_training_evolution, calculate_FID_score, calculate_FID_interval, save_sample_interval, start_epoch, checkpoint_interval, training_mode, loss_values),
           nprocs=world_size,
           join=True
     )

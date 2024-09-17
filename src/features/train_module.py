@@ -22,7 +22,7 @@ def train_discriminator(discriminator, optimizer_discriminator, all_samples, all
   loss_discriminator = discriminator.module.loss_function(output_discriminator, all_samples_labels)
   loss_discriminator.backward(retain_graph=retain_graph)
   optimizer_discriminator.step()
-  return loss_discriminator
+  return loss_discriminator.cpu().detach().numpy()
 
 def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
   generator.zero_grad()
@@ -47,7 +47,7 @@ def train_generator(generator, discriminator_list, optimizer_generator, latent_s
 
   loss_generator.backward()
   optimizer_generator.step()
-  return loss_generator
+  return loss_generator.cpu().detach().numpy()
 
 def denormalize_and_convert_uint8(images):
   images = (images * 0.5 + 0.5) * 255.0  
@@ -66,6 +66,8 @@ def train_model(rank,
                 log_wandb,
                 show_training_process,
                 show_training_evolution,
+                calculate_FID_score,
+                calculate_FID_interval,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
@@ -86,7 +88,8 @@ def train_model(rank,
     optimizer.name = 'optimizer_' + model.name
 
   # Initialize FID metric
-  fid = FrechetInceptionDistance(feature=64).to(device)
+  if calculate_FID_score:
+    fid = FrechetInceptionDistance(feature=64).to(device)
 
   # Setup models
   generator = model_list[0]
@@ -137,8 +140,7 @@ def train_model(rank,
       for i, (discriminator, optimizer_discriminator) in enumerate(zip(discriminator_list, optimizer_discriminator_list)):
         retain_graph = i < num_discriminators - 1
         loss_discriminator = train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph)
-        loss_discriminator = loss_discriminator.cpu().detach().numpy()
-        
+
         if discriminator.module.name not in loss_values.discriminator_loss_values:
           loss_values.discriminator_loss_values[discriminator.module.name] = []
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
@@ -148,14 +150,13 @@ def train_model(rank,
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
-      generator_loss = loss_generator.cpu().detach().numpy()
           
       if generator.module.name not in loss_values.generator_loss_values:
         loss_values.generator_loss_values[generator.module.name] = []
-      loss_values.generator_loss_values[generator.module.name].append(generator_loss)
+      loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
       if log_wandb:
-        wandb.log({f"{generator.module.name}_loss": generator_loss})
+        wandb.log({f"{generator.module.name}_loss": loss_generator})
 
       # Update the progress bar
       progress_bar_batch.update()
@@ -165,13 +166,18 @@ def train_model(rank,
       generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
 
       # Accumulate FID (real and generated samples) for this batch
-      fid.update(real_samples_uint8, real=True)
-      fid.update(generated_samples_uint8, real=False)
+      if calculate_FID_score and epoch % calculate_FID_interval == 0:
+        fid.update(real_samples_uint8, real=True)
+        fid.update(generated_samples_uint8, real=False)
 
     # Calculate FID score
-    fid_score.append(fid.compute())
-    if log_wandb:
-        wandb.log({"FID": fid_score[-1]})
+    if calculate_FID_score:
+      if epoch % calculate_FID_interval == 0:
+        fid_score.append(fid.compute().cpu().detach().numpy())
+      else:
+        fid_score.append(None)
+      if log_wandb:
+          wandb.log({"FID": fid_score[-1]})
 
     # Update the progress bar
     progress_bar_epoch.update()

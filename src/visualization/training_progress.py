@@ -33,8 +33,7 @@ class PlotTrainingProgress:
     self.ax1.legend(loc="best")
 
     self.ax2.set_title(f"FID Score (Epoch {epoch})")
-    self.ax2.plot(fid_score, alpha=0.5)
-    self.ax2.legend(loc="best")    
+    self.ax2.plot(fid_score, alpha=0.5) 
 
     self.fig.canvas.draw()
     plt.pause(0.1)
