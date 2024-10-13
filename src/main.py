@@ -2,7 +2,6 @@ from features import get_data_loader, get_device, get_checkpoint, train_model, g
 from visualization import show_sample_data, generate_sample
 from colorama import Fore, Style
 
-import torch
 import os
 import yaml
 import matplotlib.pyplot as plt

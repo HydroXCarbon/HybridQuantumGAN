@@ -1,6 +1,7 @@
 Configuration:
   # Preprocessing
   device: cuda:0 # 'cuda:0' or 'cpu'
+  #device: cpu # 'cuda:0' or 'cpu'
   seed: # Set seed
   save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
   checkpoint_interval: 5 # Save model every n epochs
@@ -12,7 +13,7 @@ Configuration:
   # Evaluation
   log_wandb: False
   show_training_process: True
-  calculate_FID_score: True # This part take long time
+  calculate_FID_score: False # This part take long time
   calculate_FID_interval: 5
   show_training_evolution: False
   generate_data: False

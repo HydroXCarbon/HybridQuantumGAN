@@ -77,8 +77,8 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Initialize DistributedDataParallel
-  backend = 'gloo' if device == 'cpu' else 'nccl'
-    
+  backend = 'gloo' if device.type == 'cpu' else 'nccl'
+
   dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
   if loss_values is None:
     loss_values = LossValues()
@@ -125,7 +125,8 @@ def train_model(rank,
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
     # Clear FID metrics at the beginning of each epoch
-    fid.reset()
+    if calculate_FID_score:
+      fid.reset()
 
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       real_samples = real_samples.to(device=device)
