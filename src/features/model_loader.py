@@ -3,7 +3,7 @@ import torch.nn as nn
 from models import *
 from colorama import Fore, Style, init
 
-def get_model(models, model_selector, device):
+def get_model(models, model_selector):
   model_list = []
   optimizer_list = []
   model_selector = model_selector.split(',')

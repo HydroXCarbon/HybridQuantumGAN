@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
 
 class PlotTrainingProgress:
 
@@ -31,9 +33,17 @@ class PlotTrainingProgress:
       self.ax1.plot(values, label=discriminator, alpha=0.5)
 
     self.ax1.legend(loc="best")
+    self.ax1.set_xlabel("Iteration")
+    self.ax1.set_ylabel("Loss value")
+    self.ax1.xaxis.set_major_locator(MaxNLocator(integer=True))
+
 
     self.ax2.set_title(f"FID Score (Epoch {epoch})")
-    self.ax2.plot(fid_score, alpha=0.5) 
+    data, epoch = zip(*fid_score)
+    self.ax2.plot(epoch, data, marker='o')
+    self.ax2.set_xlabel("Epochs")
+    self.ax2.set_ylabel("FID Score")
+    self.ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     self.fig.canvas.draw()
     plt.pause(0.1)

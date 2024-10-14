@@ -1,13 +1,11 @@
 from visualization import PlotTrainingProgress, PlotEvolution
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torchmetrics.image.fid import FrechetInceptionDistance
-
 from tqdm import tqdm
 from colorama import Fore, Style
+from .DDP_utils import setup, cleanup
 
 import torch
-import os
-import torch.distributed as dist
 import wandb
 
 class LossValues:
@@ -15,18 +13,6 @@ class LossValues:
     self.generator_loss_values = {}
     self.discriminator_loss_values = {}
     self.entropy_values = {}
-
-def setup(rank, world_size, device):
-    # Set up distributed training
-    backend = 'gloo' if device.type == 'cpu' else 'nccl'
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-
-    # initialize the process group
-    dist.init_process_group(backend, rank=rank, world_size=world_size)
-
-def cleanup():
-    dist.destroy_process_group()
 
 def train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph):
   discriminator.zero_grad()
@@ -85,13 +71,13 @@ def train_model(rank,
                 start_epoch=0,
                 checkpoint_interval=5,
                 training_mode='alternating',
-                loss_values=None):
+                loss_values=None,
+                fid_score=[]):
   from features import save_checkpoint
   from visualization import generate_sample
 
   # Initialize DistributedDataParallel
   setup(rank, world_size, device)
-
   if loss_values is None:
     loss_values = LossValues()
 
@@ -101,7 +87,7 @@ def train_model(rank,
 
   # Initialize FID metric
   if calculate_FID_score:
-    fid = FrechetInceptionDistance(feature=64).to(device)
+    fid = FrechetInceptionDistance(feature=64).to(rank)
 
   # Setup models and optimizers
   generator, discriminator_list = model_list[0], model_list[1:]
@@ -114,12 +100,11 @@ def train_model(rank,
   for i in range(len(discriminator_list)):
     discriminator_list[i] = discriminator_list[i].to(rank)
     discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
-
+  
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
   batch_size = train_loader.batch_size
   generated_samples_list = []
-  fid_score = []
 
   # Create instance for plotting
   if rank == 0:
@@ -137,6 +122,7 @@ def train_model(rank,
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
+    progress_bar_batch.set_description(f"Process {rank}: Training Epoch {epoch}")
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
       fid.reset()
@@ -187,9 +173,7 @@ def train_model(rank,
     # Calculate FID score
     if calculate_FID_score:
       if epoch % calculate_FID_interval == 0:
-        fid_score.append(fid.compute().cpu().detach().numpy())
-      else:
-        fid_score.append(None)
+        fid_score.append([fid.compute().cpu().detach().numpy().item(), epoch])
       if log_wandb:
           wandb.log({"FID": fid_score[-1]})
 
@@ -208,8 +192,8 @@ def train_model(rank,
         generated_samples_list.append(generated_samples)
 
       # Save checkpoint at the specified interval
-      if (epoch + 1) % checkpoint_interval == 0 :
-        save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
+      if (epoch + 1) % checkpoint_interval == 0 and False :
+        save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values, fid_score)    
 
       # Plot the evolution of the generator
       if show_training_evolution:

@@ -76,7 +76,7 @@ def main():
   device = get_device(device)
 
   # Load models
-  model_list, optimizer_list = get_model(models, model_selector, device)
+  model_list, optimizer_list = get_model(models, model_selector)
 
   # Load data
   train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
@@ -87,11 +87,12 @@ def main():
     show_sample_data(real_samples, title='Real Sample', sample_size=16)
 
   # Load checkpoint
-  start_epoch, loss_values = 0, None
+  start_epoch, loss_values, fid_score = 0, None, []
   if load_checkpoint:
-    start_epoch, loss_values = get_checkpoint(checkpoint_folder=checkpoint_folder, 
+    start_epoch, loss_values, fid_score = get_checkpoint(checkpoint_folder=checkpoint_folder, 
                                               model_list=model_list,
-                                              optimizer_list=optimizer_list)
+                                              optimizer_list=optimizer_list,
+                                              device=device)
 
   # Update wandb config with models and optimizers
   if log_wandb:
@@ -106,7 +107,7 @@ def main():
   if training and epochs != start_epoch:
     mp.spawn(
           train_model,
-          args=(world_size, device, epochs, train_loader, model_list, optimizer_list, checkpoint_folder, log_wandb, show_training_process, show_training_evolution, calculate_FID_score, calculate_FID_interval, save_sample_interval, start_epoch, checkpoint_interval, training_mode, loss_values),
+          args=(world_size, device, epochs, train_loader, model_list, optimizer_list, checkpoint_folder, log_wandb, show_training_process, show_training_evolution, calculate_FID_score, calculate_FID_interval, save_sample_interval, start_epoch, checkpoint_interval, training_mode, loss_values, fid_score),
           nprocs=world_size,
           join=True
     )
