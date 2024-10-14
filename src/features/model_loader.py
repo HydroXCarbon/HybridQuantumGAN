@@ -28,7 +28,7 @@ def get_model(models, model_selector, device):
 
     # Set up models dynamically
     model_instance = model_class()
-    model_instance = model_instance.to(device)
+    #model_instance = model_instance.to(device)
     model_instance.name = model_name
     
     # Dynamically retrieve the loss function class from torch.nn

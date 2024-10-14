@@ -6,6 +6,7 @@ from tqdm import tqdm
 from colorama import Fore, Style
 
 import torch
+import os
 import torch.distributed as dist
 import wandb
 
@@ -14,6 +15,18 @@ class LossValues:
     self.generator_loss_values = {}
     self.discriminator_loss_values = {}
     self.entropy_values = {}
+
+def setup(rank, world_size, device):
+    # Set up distributed training
+    backend = 'gloo' if device.type == 'cpu' else 'nccl'
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+
+    # initialize the process group
+    dist.init_process_group(backend, rank=rank, world_size=world_size)
+
+def cleanup():
+    dist.destroy_process_group()
 
 def train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph):
   discriminator.zero_grad()
@@ -77,9 +90,8 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Initialize DistributedDataParallel
-  backend = 'gloo' if device.type == 'cpu' else 'nccl'
+  setup(rank, world_size, device)
 
-  dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
   if loss_values is None:
     loss_values = LossValues()
 
@@ -91,23 +103,24 @@ def train_model(rank,
   if calculate_FID_score:
     fid = FrechetInceptionDistance(feature=64).to(device)
 
-  # Setup models
-  generator = model_list[0]
-  discriminator_list = [discriminator for discriminator in model_list[1:]]
+  # Setup models and optimizers
+  generator, discriminator_list = model_list[0], model_list[1:]
+  optimizer_generator, optimizer_discriminator_list = optimizer_list[0], optimizer_list[1:]
 
-  # Wrap models with DistributedDataParallel
-  generator = DDP(generator)
-  discriminator_list = [DDP(discriminator) for discriminator in discriminator_list]
+  # Move models to device and wrap with DistributedDataParallel
+  generator = generator.to(rank)
+  generator = DDP(generator, device_ids=[rank])
 
-  optimizer_generator = optimizer_list[0]
-  optimizer_discriminator_list = optimizer_list[1:]
+  for i in range(len(discriminator_list)):
+    discriminator_list[i] = discriminator_list[i].to(rank)
+    discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
 
   num_discriminators = len(discriminator_list)
+  total_batches = len(train_loader)
   batch_size = train_loader.batch_size
   generated_samples_list = []
-  total_batches = len(train_loader)
   fid_score = []
-    
+
   # Create instance for plotting
   if rank == 0:
     # Training loop
@@ -129,11 +142,11 @@ def train_model(rank,
       fid.reset()
 
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
-      real_samples = real_samples.to(device=device)
-      real_samples_labels = torch.ones((batch_size, 1)).to(device=device)
-      latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
+      real_samples = real_samples.to(rank)
+      real_samples_labels = torch.ones((batch_size, 1)).to(rank)
+      latent_space_samples = torch.randn((batch_size, 100)).to(rank)
       generated_samples = generator(latent_space_samples)
-      generated_samples_labels = torch.zeros((batch_size, 1)).to(device=device)
+      generated_samples_labels = torch.zeros((batch_size, 1)).to(rank)
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
@@ -217,3 +230,5 @@ def train_model(rank,
 
     # Save final checkpoint
     save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
+
+  cleanup()

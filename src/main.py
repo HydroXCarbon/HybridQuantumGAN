@@ -63,10 +63,6 @@ def main():
   show_training_process, calculate_FID_score, calculate_FID_interval, 
   show_training_evolution, generate_data, log_wandb) = load_configuration(Configuration)
 
-  # Set up distributed training
-  os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '12355'
-
   # Set up folders path
   script_dir = os.path.dirname(os.path.abspath(__file__))
   data_folder = os.path.join(script_dir, '..', 'data')
@@ -106,6 +102,7 @@ def main():
       })
 
   # Train model using multiprocessing
+  #training = False
   if training and epochs != start_epoch:
     mp.spawn(
           train_model,
@@ -113,7 +110,7 @@ def main():
           nprocs=world_size,
           join=True
     )
-
+  
   # Generate sample
   if generate_data:
     generated_sample = generate_sample(model_list[0], device, sample_size=16)

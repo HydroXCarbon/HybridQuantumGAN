@@ -1,6 +1,6 @@
 Configuration:
   # Preprocessing
-  device: cuda:0 # 'cuda:0' or 'cpu'
+  device: cuda # 'cuda:0' or 'cpu'
   #device: cpu # 'cuda:0' or 'cpu'
   seed: # Set seed
   save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
