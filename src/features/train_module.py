@@ -20,7 +20,7 @@ def train_model(rank,
                 train_loader, 
                 model_list,
                 optimizer_list, 
-                checkpoint_folder, 
+                checkpoint_path, 
                 log_wandb,
                 show_training_process,
                 show_training_evolution,
@@ -149,7 +149,7 @@ def train_model(rank,
 
       # Save checkpoint at the specified interval
       if (epoch + 1) % checkpoint_interval == 0 :
-        save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values, fid_score)    
+        save_checkpoint(epoch, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
 
       # Plot the evolution of the generator
       if show_training_evolution:
@@ -165,6 +165,6 @@ def train_model(rank,
     print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
     # Save final checkpoint
-    save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values, fid_score)
+    save_checkpoint(epochs, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)
 
   cleanup()

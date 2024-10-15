@@ -2,9 +2,9 @@ Configuration:
   # Preprocessing
   device: cpu # 'cuda:0' or 'cpu'
   seed: # Set seed
-  checkpoint_interval: 5 # Save model state every n epochs
+  checkpoint_interval: 1 # Save model state every n epochs
   training_mode: alternating # Training mode 'alternating' or 'combined' or 'continuous'
-  load_checkpoint: False
+  load_checkpoint: True
   world_size: 1 # Maximum umber of Processes (DDP)
   show_training_sample: False
   #Train

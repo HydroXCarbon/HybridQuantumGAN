@@ -1,4 +1,4 @@
-from features import get_data_loader, get_device, get_checkpoint, train_model, get_model, load_configuration, load_hyperparameters
+from features import get_data_loader, get_device, get_checkpoint, train_model, get_model, load_configuration, load_hyperparameters, init_wandb, load_run_id
 from visualization import show_sample_data, generate_sample
 from colorama import Fore, Style
 
@@ -15,45 +15,28 @@ def main():
   Hyperparameter = config['Hyperparameter']
   Configuration = config['Configuration']
   wandb_instant = None
+  project_name = 'HybridQuantumGAN'
+  entity_name = 'purin-pongpanich-mahidol-university'
+  run_id = None
+
+  # Set up folders path
+  script_dir = os.path.dirname(os.path.abspath(__file__))
+  data_folder = os.path.join(script_dir, '..', 'data')
+  checkpoint_folder = os.path.join(script_dir, 'checkpoints')
+  checkpoint_path = os.path.join(checkpoint_folder, f'checkpoint.pth')
+
+  # Create required folders
+  os.makedirs(checkpoint_folder, exist_ok=True)
+  os.makedirs(data_folder, exist_ok=True)
+
+  # Load run_id from checkpoint
+  if Configuration['load_checkpoint']:
+    run_id = load_run_id(checkpoint_path)
+  print(Fore.GREEN + "Run ID:" + Style.RESET_ALL + f" {run_id}")
 
   # Start wandb logging
   if Configuration['log_wandb']:
-    wandb_config={
-          "epochs": Hyperparameter['epochs'],
-          "batch_size": Hyperparameter['batch_size'],
-          "seed": Configuration['seed'],
-    }
-    wandb_instant = wandb.init(
-      project="HybridQuantumGAN",
-      config=wandb_config,
-      group="DDP"
-    )
-    
-    # Disable some visualization if using wandb (sweep mode)
-    if wandb.run and wandb.run.sweep_id is not None:
-      print('test')
-      Configuration.update({
-        'show_training_process': False,
-        'show_training_evolution': False,
-        'show_sample': False,
-        'generate_data': False
-      })
-
-      # Override local configuration with wandb config (sweep mode)
-      sweep_wandb_config = wandb.config
-      for key, value in sweep_wandb_config.items():
-        # Update Hyperparameter and Configuration
-        print(key, value)
-        if key in ['epochs', 'batch_size', 'seed']:
-          if key in Hyperparameter:
-            Hyperparameter[key] = value
-          elif key in Configuration:
-            Configuration[key] = value
-        # Update model and optimizer learning rate
-        elif key.endswith('learning_rate'):
-          model_name = key.replace('_learning_rate', '')
-          if model_name in Hyperparameter['models']:
-            Hyperparameter['models'][model_name]['learning_rate'] = value
+    wandb_instant = init_wandb(project_name, Hyperparameter, Configuration, run_id)
   else:
     print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 
@@ -65,15 +48,6 @@ def main():
   show_training_sample, load_checkpoint, training, world_size, 
   show_training_process, calculate_FID_score, calculate_FID_interval, 
   show_training_evolution, generate_data, log_wandb) = load_configuration(Configuration)
-
-  # Set up folders path
-  script_dir = os.path.dirname(os.path.abspath(__file__))
-  data_folder = os.path.join(script_dir, '..', 'data')
-  checkpoint_folder = os.path.join(script_dir, 'checkpoints')
-
-  # Create required folders
-  os.makedirs(checkpoint_folder, exist_ok=True)
-  os.makedirs(data_folder, exist_ok=True)
 
   # Use cuda if available
   device = get_device(device)
@@ -92,10 +66,9 @@ def main():
   # Load checkpoint
   start_epoch, loss_values, fid_score = 0, None, []
   if load_checkpoint:
-    start_epoch, loss_values, fid_score = get_checkpoint(checkpoint_folder=checkpoint_folder, 
+    start_epoch, loss_values, fid_score = get_checkpoint(checkpoint_path=checkpoint_path, 
                                                         model_list=model_list,
-                                                        optimizer_list=optimizer_list,
-                                                        device=device)
+                                                        optimizer_list=optimizer_list)
 
   # Update wandb config with models and optimizers
   if log_wandb:
@@ -115,7 +88,7 @@ def main():
                 train_loader, 
                 model_list, 
                 optimizer_list, 
-                checkpoint_folder, 
+                checkpoint_path, 
                 log_wandb, 
                 show_training_process, 
                 show_training_evolution, 
@@ -133,7 +106,8 @@ def main():
     )
   
   # Finish wandb logging
-  wandb_instant.finish()
+  if wandb_instant:
+    wandb_instant.finish()
   
   # Generate sample
   if generate_data:
