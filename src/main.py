@@ -36,7 +36,7 @@ def main():
 
   # Start wandb logging
   if Configuration['log_wandb']:
-    wandb_instant = init_wandb(project_name, Hyperparameter, Configuration, run_id)
+    wandb_instant = init_wandb(project_name, entity_name, Hyperparameter, Configuration, run_id)
   else:
     print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 

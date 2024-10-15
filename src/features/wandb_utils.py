@@ -1,17 +1,29 @@
-import torch
 import wandb
+from colorama import Fore, Style
+from wandb import Api
 
 # Initialize wandb API
-def init_wandb(project_name, Hyperparameter, Configuration, run_id):
+def is_run_completed(path):
+  api = Api()
+  try:
+    run = api.run(path)
+    return run.state == 'finished'
+  except wandb.errors.CommError:
+    print(Fore.RED + "Error:" + Style.RESET_ALL + " Unable to fetch run status.")
+    return False
+  
+def init_wandb(project_name, entity_name, Hyperparameter, Configuration, run_id):
+  path = f"{entity_name}/{project_name}/{run_id}"
   wandb_config={
           "epochs": Hyperparameter['epochs'],
           "batch_size": Hyperparameter['batch_size'],
           "seed": Configuration['seed'],
   }
   # Initialize wandb with or without run_id based on its presence
-  if run_id:
+  if run_id and not is_run_completed(path):
     wandb_instant = wandb.init(
       project=project_name,
+      entity=entity_name,
       config=wandb_config,
       group="DDP",
       resume="allow",
@@ -20,6 +32,7 @@ def init_wandb(project_name, Hyperparameter, Configuration, run_id):
   else:
     wandb_instant = wandb.init(
       project=project_name,
+      entity=entity_name,
       config=wandb_config,
       group="DDP",
       resume="allow"
@@ -27,12 +40,15 @@ def init_wandb(project_name, Hyperparameter, Configuration, run_id):
   
   # Disable some visualization if using wandb (sweep mode)
   if wandb.run and wandb.run.sweep_id is not None:
-    print('test')
+    if Configuration['load_checkpoint']:
+      print(Fore.RED + "Load checkpoint is disabled in sweep mode." + Style.RESET_ALL)
+
     Configuration.update({
       'show_training_process': False,
       'show_training_evolution': False,
       'show_sample': False,
-      'generate_data': False
+      'generate_data': False,
+      'load_checkpoint': False
     })
 
     # Override local configuration with wandb config (sweep mode)
