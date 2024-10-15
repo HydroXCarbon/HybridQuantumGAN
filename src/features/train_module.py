@@ -1,9 +1,9 @@
 from visualization import PlotTrainingProgress, PlotEvolution
-from torch.nn.parallel import DistributedDataParallel as DDP
 from torchmetrics.image.fid import FrechetInceptionDistance
 from tqdm import tqdm
 from colorama import Fore, Style
 from .DDP_utils import setup, cleanup
+from .module_utils import move_model_and_optimizer_to_rank, train_discriminator, train_generator, denormalize_and_convert_uint8
 
 import torch
 import wandb
@@ -13,46 +13,6 @@ class LossValues:
     self.generator_loss_values = {}
     self.discriminator_loss_values = {}
     self.entropy_values = {}
-
-def train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph):
-  discriminator.zero_grad()
-  optimizer_discriminator.zero_grad()
-  output_discriminator = discriminator(all_samples)
-  loss_discriminator = discriminator.module.loss_function(output_discriminator, all_samples_labels)
-  loss_discriminator.backward(retain_graph=retain_graph)
-  optimizer_discriminator.step()
-  return loss_discriminator.cpu().detach().numpy()
-
-def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
-  generator.zero_grad()
-  generated_samples = generator(latent_space_samples)
-  
-  if training_mode == 'combined':
-    combined_output = torch.zeros_like(discriminator_list[0](generated_samples))
-    for discriminator in discriminator_list:
-      combined_output += discriminator(generated_samples)
-    combined_output /= len(discriminator_list)
-    loss_generator = generator.module.loss_function(combined_output, real_samples_labels)
-  elif training_mode == 'alternating':
-    discriminator = discriminator_list[epoch % num_discriminators]
-    output_discriminator_generated = discriminator(generated_samples)
-    loss_generator = generator.module.loss_function(output_discriminator_generated, real_samples_labels)
-  elif training_mode == 'continuous':
-    for discriminator in discriminator_list:
-      output_discriminator_generated = discriminator(generated_samples)
-      loss_generator = generator.module.loss_function(output_discriminator_generated, real_samples_labels)
-  else:
-    raise ValueError(f"Training mode {training_mode} not supported")
-
-  loss_generator.backward()
-  optimizer_generator.step()
-  return loss_generator.cpu().detach().numpy()
-
-def denormalize_and_convert_uint8(images):
-  images = (images * 0.5 + 0.5) * 255.0  
-  images = images.clamp(0, 255) 
-  images = images.to(torch.uint8) 
-  return images
 
 def train_model(rank, 
                 world_size,
@@ -76,12 +36,13 @@ def train_model(rank,
   from features import save_checkpoint
   from visualization import generate_sample
 
-  # Initialize DistributedDataParallel
+  # Set up DistributedDataParallel
   setup(rank, world_size, device)
+
   if loss_values is None:
     loss_values = LossValues()
 
-  # Fix bug Optimizer.name disappears
+  # Fix bug Optimizer.name disappears when using DDP
   for optimizer, model in zip(optimizer_list, model_list):
     optimizer.name = 'optimizer_' + model.name
 
@@ -90,16 +51,7 @@ def train_model(rank,
     fid = FrechetInceptionDistance(feature=64).to(rank)
 
   # Setup models and optimizers
-  generator, discriminator_list = model_list[0], model_list[1:]
-  optimizer_generator, optimizer_discriminator_list = optimizer_list[0], optimizer_list[1:]
-
-  # Move models to device and wrap with DistributedDataParallel
-  generator = generator.to(rank)
-  generator = DDP(generator, device_ids=[rank])
-
-  for i in range(len(discriminator_list)):
-    discriminator_list[i] = discriminator_list[i].to(rank)
-    discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
+  generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_rank(model_list, optimizer_list, rank)
   
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
@@ -116,17 +68,21 @@ def train_model(rank,
       plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank*2)
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank*2)
   progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+1)
+  progress_bar_epoch.update(start_epoch)
 
+  # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
     progress_bar_batch.set_description(f"Process {rank}: Training Epoch {epoch}")
+
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
       fid.reset()
 
+    # Training loop (Batch)
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       real_samples = real_samples.to(rank)
       real_samples_labels = torch.ones((batch_size, 1)).to(rank)

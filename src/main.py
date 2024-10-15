@@ -90,9 +90,9 @@ def main():
   start_epoch, loss_values, fid_score = 0, None, []
   if load_checkpoint:
     start_epoch, loss_values, fid_score = get_checkpoint(checkpoint_folder=checkpoint_folder, 
-                                              model_list=model_list,
-                                              optimizer_list=optimizer_list,
-                                              device=device)
+                                                        model_list=model_list,
+                                                        optimizer_list=optimizer_list,
+                                                        device=device)
 
   # Update wandb config with models and optimizers
   if log_wandb:
@@ -103,11 +103,27 @@ def main():
       })
 
   # Train model using multiprocessing
-  #training = False
   if training and epochs != start_epoch:
     mp.spawn(
           train_model,
-          args=(world_size, device, epochs, train_loader, model_list, optimizer_list, checkpoint_folder, log_wandb, show_training_process, show_training_evolution, calculate_FID_score, calculate_FID_interval, save_sample_interval, start_epoch, checkpoint_interval, training_mode, loss_values, fid_score),
+          args=(world_size,
+                device, 
+                epochs,
+                train_loader, 
+                model_list, 
+                optimizer_list, 
+                checkpoint_folder, 
+                log_wandb, 
+                show_training_process, 
+                show_training_evolution, 
+                calculate_FID_score, 
+                calculate_FID_interval, 
+                save_sample_interval, 
+                start_epoch, 
+                checkpoint_interval, 
+                training_mode, 
+                loss_values, 
+                fid_score),
           nprocs=world_size,
           join=True
     )

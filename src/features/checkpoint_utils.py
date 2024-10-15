@@ -24,9 +24,10 @@ def get_checkpoint(checkpoint_folder, model_list, optimizer_list, device):
 	if path.exists(checkpoint_path):
 		checkpoint = load(checkpoint_path)
 
-		for model, optimizer in zip(model_list, optimizer_list):
+		for model in model_list:
 			model.load_state_dict(checkpoint[f'{model.name}_state_dict'])
-			#optimizer.load_state_dict(checkpoint[f'{optimizer.name}_state_dict'])
+		for optimizer in optimizer_list:
+			optimizer.load_state_dict(checkpoint[f'{optimizer.name}_state_dict'])
 
 		# Load loss value
 		loss_values = checkpoint['loss_values']

@@ -11,7 +11,7 @@ def get_model(models, model_selector):
   
   # Initialize models dynamically
   print(Fore.GREEN + "Loading model: " + Style.RESET_ALL, end='')
-  for i, model_name in enumerate(models):
+  for model_name in models:
     if model_name not in model_selector:
       continue
     print(model_name, end=' ')
