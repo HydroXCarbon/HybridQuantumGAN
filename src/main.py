@@ -14,43 +14,46 @@ def main():
     config = yaml.safe_load(file)
   Hyperparameter = config['Hyperparameter']
   Configuration = config['Configuration']
+  wandb_instant = None
 
   # Start wandb logging
   if Configuration['log_wandb']:
     wandb_config={
-          "architecture": "HQGAN",
           "epochs": Hyperparameter['epochs'],
           "batch_size": Hyperparameter['batch_size'],
-          "training_mode": Configuration['training_mode'],
           "seed": Configuration['seed'],
     }
-    wandb.init(
+    wandb_instant = wandb.init(
       project="HybridQuantumGAN",
-      config=wandb_config
+      config=wandb_config,
+      group="DDP"
     )
-    # Override local configuration with wandb config (sweep mode)
-    wandb_config = wandb.config
-    for key, value in wandb_config.items():
-      # Update Hyperparameter and Configuration
-      if key in ['epochs', 'batch_size', 'training_mode']:
-        if key in Hyperparameter:
-          Hyperparameter[key] = value
-        elif key in Configuration:
-          Configuration[key] = value
-      # Update model and optimizer learning rate
-      elif key.endswith('learning_rate'):
-        model_name = key.replace('_learning_rate', '')
-        if model_name in Hyperparameter['models']:
-          Hyperparameter['models'][model_name]['learning_rate'] = value
-      
-      # Disable some visualization if using wandb sweep mode
-      if wandb.run.sweep_id is not None:
-        Configuration.update({
-          'show_training_process': False,
-          'show_training_evolution': False,
-          'show_sample': False,
-          'generate_data': False
-        })
+    
+    # Disable some visualization if using wandb (sweep mode)
+    if wandb.run and wandb.run.sweep_id is not None:
+      print('test')
+      Configuration.update({
+        'show_training_process': False,
+        'show_training_evolution': False,
+        'show_sample': False,
+        'generate_data': False
+      })
+
+      # Override local configuration with wandb config (sweep mode)
+      sweep_wandb_config = wandb.config
+      for key, value in sweep_wandb_config.items():
+        # Update Hyperparameter and Configuration
+        print(key, value)
+        if key in ['epochs', 'batch_size', 'seed']:
+          if key in Hyperparameter:
+            Hyperparameter[key] = value
+          elif key in Configuration:
+            Configuration[key] = value
+        # Update model and optimizer learning rate
+        elif key.endswith('learning_rate'):
+          model_name = key.replace('_learning_rate', '')
+          if model_name in Hyperparameter['models']:
+            Hyperparameter['models'][model_name]['learning_rate'] = value
   else:
     print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 
@@ -118,6 +121,7 @@ def main():
                 show_training_evolution, 
                 calculate_FID_score, 
                 calculate_FID_interval, 
+                wandb_instant,
                 save_sample_interval, 
                 start_epoch, 
                 checkpoint_interval, 
@@ -127,6 +131,9 @@ def main():
           nprocs=world_size,
           join=True
     )
+  
+  # Finish wandb logging
+  wandb_instant.finish()
   
   # Generate sample
   if generate_data:

@@ -38,6 +38,6 @@ def get_checkpoint(checkpoint_folder, model_list, optimizer_list, device):
 		# Load epoch
 		start_epoch = checkpoint['epoch'] + 1
 		print(Fore.GREEN + "Loading checkpoint: " + Style.RESET_ALL, end='')
-		print(f"epoch {start_epoch - 1}")
+		print(f"Epoch {start_epoch - 1}")
 		
 	return start_epoch, loss_values, fid_score

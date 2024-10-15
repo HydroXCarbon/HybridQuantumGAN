@@ -6,7 +6,6 @@ from .DDP_utils import setup, cleanup
 from .module_utils import move_model_and_optimizer_to_rank, train_discriminator, train_generator, denormalize_and_convert_uint8
 
 import torch
-import wandb
 
 class LossValues:
   def __init__(self):
@@ -27,6 +26,7 @@ def train_model(rank,
                 show_training_evolution,
                 calculate_FID_score,
                 calculate_FID_interval,
+                wandb_instant,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
@@ -52,7 +52,8 @@ def train_model(rank,
 
   # Setup models and optimizers
   generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_rank(model_list, optimizer_list, rank)
-  
+  print(f"Generator is running on device: {next(generator.parameters()).device}")
+
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
   batch_size = train_loader.batch_size
@@ -68,20 +69,19 @@ def train_model(rank,
       plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank*2)
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=0, initial=start_epoch)
   progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+1)
-  progress_bar_epoch.update(start_epoch)
 
   # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
     progress_bar_batch.set_description(f"Process {rank}: Training Epoch {epoch}")
-
+    
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
       fid.reset()
-
+      
     # Training loop (Batch)
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
       real_samples = real_samples.to(rank)
@@ -102,7 +102,7 @@ def train_model(rank,
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
         
         if log_wandb:
-          wandb.log({f"{discriminator.module.name}_loss": loss_discriminator})
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
@@ -112,7 +112,7 @@ def train_model(rank,
       loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
       if log_wandb:
-        wandb.log({f"{generator.module.name}_loss": loss_generator})
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator})
 
       # Update the progress bar
       progress_bar_batch.update()
@@ -127,11 +127,11 @@ def train_model(rank,
         fid.update(generated_samples_uint8, real=False)
 
     # Calculate FID score
-    if calculate_FID_score:
-      if epoch % calculate_FID_interval == 0:
-        fid_score.append([fid.compute().cpu().detach().numpy().item(), epoch])
-      if log_wandb:
-          wandb.log({"FID": fid_score[-1]})
+    if calculate_FID_score and epoch % calculate_FID_interval == 0:
+        fid_value = fid.compute().cpu().detach().numpy().item()
+        fid_score.append([fid_value, epoch])
+        if log_wandb:
+            wandb_instant.log({"FID": fid_value, "Epoch": epoch})
 
     # Update the progress bar
     progress_bar_epoch.update()
@@ -148,7 +148,7 @@ def train_model(rank,
         generated_samples_list.append(generated_samples)
 
       # Save checkpoint at the specified interval
-      if (epoch + 1) % checkpoint_interval == 0 and False :
+      if (epoch + 1) % checkpoint_interval == 0 :
         save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values, fid_score)    
 
       # Plot the evolution of the generator
@@ -164,11 +164,7 @@ def train_model(rank,
     # Finish training
     print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
-    # Finish the wandb run
-    if log_wandb:
-      wandb.finish()
-
     # Save final checkpoint
-    save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
+    save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values, fid_score)
 
   cleanup()
