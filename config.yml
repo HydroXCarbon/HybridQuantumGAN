@@ -1,4 +1,8 @@
 Configuration:
+  # Wandb
+  wandb:
+    project: "HybridQuantumGAN"
+    entity: "purin-pongpanich-mahidol-university"
   # Preprocessing
   device: cpu # 'cuda:0' or 'cpu'
   seed: # Set seed

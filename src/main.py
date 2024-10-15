@@ -15,8 +15,8 @@ def main():
   Hyperparameter = config['Hyperparameter']
   Configuration = config['Configuration']
   wandb_instant = None
-  project_name = 'HybridQuantumGAN'
-  entity_name = 'purin-pongpanich-mahidol-university'
+  project_name = Configuration['wandb']['project']
+  entity_name = Configuration['wandb']['entity']
   run_id = None
 
   # Set up folders path

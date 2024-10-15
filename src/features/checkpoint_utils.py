@@ -25,9 +25,13 @@ def save_checkpoint(epoch, checkpoint_path, model_list, optimizer_list, loss_val
 
 def load_run_id(checkpoint_path):
 	run_id = None
-	if path.exists(checkpoint_path):
-		checkpoint = torch.load(checkpoint_path)
-		run_id = checkpoint['run_id']
+	try:
+		if path.exists(checkpoint_path):
+			checkpoint = torch.load(checkpoint_path)
+			run_id = checkpoint['run_id']
+	except Exception as e:
+		print(Fore.RED + "Error:" + Style.RESET_ALL + " loading run_id from checkpoint.")
+		exit(1)
 	return run_id
 
 def get_checkpoint(checkpoint_path, model_list, optimizer_list):
