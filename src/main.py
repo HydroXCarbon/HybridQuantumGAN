@@ -14,9 +14,8 @@ def main():
     config = yaml.safe_load(file)
   Hyperparameter = config['Hyperparameter']
   Configuration = config['Configuration']
+
   wandb_instant = None
-  project_name = Configuration['wandb']['project']
-  entity_name = Configuration['wandb']['entity']
   run_id = None
 
   # Set up folders path
@@ -32,11 +31,11 @@ def main():
   # Load run_id from checkpoint
   if Configuration['load_checkpoint']:
     run_id = load_run_id(checkpoint_path)
-  print(Fore.GREEN + "Run ID:" + Style.RESET_ALL + f" {run_id}")
+  print(Fore.GREEN + "Previous Run ID:" + Style.RESET_ALL + f" {run_id}")
 
   # Start wandb logging
   if Configuration['log_wandb']:
-    wandb_instant = init_wandb(project_name, entity_name, Hyperparameter, Configuration, run_id)
+    wandb_instant = init_wandb(Hyperparameter, Configuration, run_id)
   else:
     print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
 

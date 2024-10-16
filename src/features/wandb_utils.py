@@ -10,9 +10,12 @@ def is_run_completed(path):
     return run.state == 'finished'
   except wandb.errors.CommError:
     print(Fore.RED + "Error:" + Style.RESET_ALL + " Unable to fetch run status.")
-    return False
-  
-def init_wandb(project_name, entity_name, Hyperparameter, Configuration, run_id):
+    return True
+
+def init_wandb(Hyperparameter, Configuration, run_id):
+  project_name = Configuration['wandb']['project']
+  entity_name = Configuration['wandb']['entity']
+
   path = f"{entity_name}/{project_name}/{run_id}"
   wandb_config={
           "epochs": Hyperparameter['epochs'],
@@ -20,23 +23,17 @@ def init_wandb(project_name, entity_name, Hyperparameter, Configuration, run_id)
           "seed": Configuration['seed'],
   }
   # Initialize wandb with or without run_id based on its presence
-  if run_id and not is_run_completed(path):
-    wandb_instant = wandb.init(
-      project=project_name,
-      entity=entity_name,
-      config=wandb_config,
-      group="DDP",
-      resume="allow",
-      id=run_id
-    )
-  else:
-    wandb_instant = wandb.init(
-      project=project_name,
-      entity=entity_name,
-      config=wandb_config,
-      group="DDP",
-      resume="allow"
-    )
+  if run_id and is_run_completed(path):
+      run_id = None
+
+  wandb_instant = wandb.init(
+    project=project_name,
+    entity=entity_name,
+    config=wandb_config,
+    group="DDP",
+    resume="allow",
+    id=run_id
+  )
   
   # Disable some visualization if using wandb (sweep mode)
   if wandb.run and wandb.run.sweep_id is not None:

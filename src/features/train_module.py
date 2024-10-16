@@ -37,7 +37,7 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Set up DistributedDataParallel
-  setup(rank, world_size, device)
+  rank = setup(rank, world_size, device)
 
   if loss_values is None:
     loss_values = LossValues()
@@ -60,7 +60,7 @@ def train_model(rank,
   generated_samples_list = []
 
   # Create instance for plotting
-  if rank == 0:
+  if rank == 0 or rank == 'cpu':
     # Training loop
     print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
@@ -136,7 +136,7 @@ def train_model(rank,
     # Update the progress bar
     progress_bar_epoch.update()
 
-    if rank == 0:
+    if rank == 0 or rank == 'cpu':
       
       # Plot progress
       if show_training_process:
@@ -159,7 +159,7 @@ def train_model(rank,
   progress_bar_batch.close()
   progress_bar_epoch.close()
 
-  if rank == 0:
+  if rank == 0 or rank == 'cpu':
 
     # Finish training
     print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
