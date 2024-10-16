@@ -13,22 +13,28 @@ def move_optimizer_to_device(optimizer, device):
         if isinstance(value, torch.Tensor):
           state[key] = value.to(device)
 
-def move_model_and_optimizer_to_rank(model_list, optimizer_list, rank):
+def move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device):
   # Move models to device and wrap with DistributedDataParallel
   generator, discriminator_list = model_list[0], model_list[1:]
   optimizer_generator, optimizer_discriminator_list = optimizer_list[0], optimizer_list[1:]
 
-  generator = generator.to(rank)
-  generator = DDP(generator, device_ids=[rank])
+  generator = generator.to(device)
+  if device.type == 'cpu':
+    generator = DDP(generator)
+  else:
+    generator = DDP(generator, device_ids=[rank])
 
   for i in range(len(discriminator_list)):
-    discriminator_list[i] = discriminator_list[i].to(rank)
-    discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
+    discriminator_list[i] = discriminator_list[i].to(device)
+    if device.type == 'cpu':
+      discriminator_list[i] = DDP(discriminator_list[i])
+    else:
+      discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
 
   # Move optimizers to the correct device
-  move_optimizer_to_device(optimizer_generator, rank)
+  move_optimizer_to_device(optimizer_generator, device)
   for optimizer_discriminator in optimizer_discriminator_list:
-    move_optimizer_to_device(optimizer_discriminator, rank)
+    move_optimizer_to_device(optimizer_discriminator, device)
 
   return generator, discriminator_list, optimizer_generator, optimizer_discriminator_list
 
@@ -46,10 +52,10 @@ def train_generator(generator, discriminator_list, optimizer_generator, latent_s
   generated_samples = generator(latent_space_samples)
   
   if training_mode == 'combined':
-    combined_output = torch.zeros_like(discriminator_list[0](generated_samples))
+    outputs = []
     for discriminator in discriminator_list:
-      combined_output += discriminator(generated_samples)
-    combined_output /= len(discriminator_list)
+      outputs.append(discriminator(generated_samples))
+    combined_output = torch.mean(torch.stack(outputs), dim=0)
     loss_generator = generator.module.loss_function(combined_output, real_samples_labels)
   elif training_mode == 'alternating':
     discriminator = discriminator_list[epoch % num_discriminators]

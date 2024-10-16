@@ -3,7 +3,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from tqdm import tqdm
 from colorama import Fore, Style
 from .DDP_utils import setup, cleanup
-from .module_utils import move_model_and_optimizer_to_rank, train_discriminator, train_generator, denormalize_and_convert_uint8
+from .module_utils import move_model_and_optimizer_to_device, train_discriminator, train_generator, denormalize_and_convert_uint8
 
 import torch
 
@@ -37,7 +37,7 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Set up DistributedDataParallel
-  rank = setup(rank, world_size, device)
+  setup(rank, world_size, device)
 
   if loss_values is None:
     loss_values = LossValues()
@@ -51,7 +51,7 @@ def train_model(rank,
     fid = FrechetInceptionDistance(feature=64).to(rank)
 
   # Setup models and optimizers
-  generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_rank(model_list, optimizer_list, rank)
+  generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
   print(f"Generator is running on device: {next(generator.parameters()).device}")
 
   num_discriminators = len(discriminator_list)
@@ -60,7 +60,7 @@ def train_model(rank,
   generated_samples_list = []
 
   # Create instance for plotting
-  if rank == 0 or rank == 'cpu':
+  if rank == 0:
     # Training loop
     print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
@@ -84,11 +84,11 @@ def train_model(rank,
       
     # Training loop (Batch)
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
-      real_samples = real_samples.to(rank)
-      real_samples_labels = torch.ones((batch_size, 1)).to(rank)
-      latent_space_samples = torch.randn((batch_size, 100)).to(rank)
+      real_samples = real_samples.to(device)
+      real_samples_labels = torch.ones((batch_size, 1)).to(device)
+      latent_space_samples = torch.randn((batch_size, 100)).to(device)
       generated_samples = generator(latent_space_samples)
-      generated_samples_labels = torch.zeros((batch_size, 1)).to(rank)
+      generated_samples_labels = torch.zeros((batch_size, 1)).to(device)
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
@@ -136,19 +136,19 @@ def train_model(rank,
     # Update the progress bar
     progress_bar_epoch.update()
 
-    if rank == 0 or rank == 'cpu':
+    if rank == 0:
       
       # Plot progress
       if show_training_process:
         plot_progress.plot(epoch, loss_values, fid_score)
 
       # Save sample data at the specified interval
-      if (epoch + 1) % save_sample_interval == 0:
+      if epoch % save_sample_interval == 0:
         generated_samples = generate_sample(generator, device, 1)
         generated_samples_list.append(generated_samples)
 
       # Save checkpoint at the specified interval
-      if (epoch + 1) % checkpoint_interval == 0 :
+      if epoch % checkpoint_interval == 0 :
         save_checkpoint(epoch, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
 
       # Plot the evolution of the generator
@@ -159,12 +159,12 @@ def train_model(rank,
   progress_bar_batch.close()
   progress_bar_epoch.close()
 
-  if rank == 0 or rank == 'cpu':
+  if rank == 0:
 
     # Finish training
     print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
     # Save final checkpoint
-    save_checkpoint(epochs, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)
+    save_checkpoint(epochs, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)
 
   cleanup()

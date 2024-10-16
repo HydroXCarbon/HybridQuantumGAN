@@ -4,19 +4,19 @@ Configuration:
     project: "HybridQuantumGAN"
     entity: "purin-pongpanich-mahidol-university"
   # Preprocessing
-  device: cpu # 'cuda:0' or 'cpu'
+  device: cuda # 'cuda:0' or 'cpu'
   seed: # Set seed
   checkpoint_interval: 1 # Save model state every n epochs
-  training_mode: alternating # Training mode 'alternating' or 'combined' or 'continuous'
-  load_checkpoint: True
+  training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
+  load_checkpoint: False
   world_size: 1 # Maximum umber of Processes (DDP)
   show_training_sample: False
   #Train
   training: True
   # Evaluation
-  log_wandb: True
+  log_wandb: True # Note: Enable this when running sweep mode
   show_training_process: True
-  calculate_FID_score: True # Note that Calculate FID take long time
+  calculate_FID_score: True # Note: that Calculate FID take long time
   calculate_FID_interval: 5 # Calculate FID every n epochs
   show_training_evolution: False
   save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
@@ -28,7 +28,7 @@ Hyperparameter:
   model_selector: "GAN_generator,
     DCGAN_generator1,
     FCL_classical_discriminator,
-    CNN_classical_discriminator1,
+    CNN_classical_discriminator,
     Hybrid_quantum_discriminator1,"
   models:
     GAN_generator:

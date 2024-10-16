@@ -1,31 +1,16 @@
 import wandb
 from colorama import Fore, Style
-from wandb import Api
-
-# Initialize wandb API
-def is_run_completed(path):
-  api = Api()
-  try:
-    run = api.run(path)
-    return run.state == 'finished'
-  except wandb.errors.CommError:
-    print(Fore.RED + "Error:" + Style.RESET_ALL + " Unable to fetch run status.")
-    return True
 
 def init_wandb(Hyperparameter, Configuration, run_id):
   project_name = Configuration['wandb']['project']
   entity_name = Configuration['wandb']['entity']
 
-  path = f"{entity_name}/{project_name}/{run_id}"
   wandb_config={
           "epochs": Hyperparameter['epochs'],
           "batch_size": Hyperparameter['batch_size'],
           "seed": Configuration['seed'],
   }
-  # Initialize wandb with or without run_id based on its presence
-  if run_id and is_run_completed(path):
-      run_id = None
-
+  # Initialize wandb
   wandb_instant = wandb.init(
     project=project_name,
     entity=entity_name,
