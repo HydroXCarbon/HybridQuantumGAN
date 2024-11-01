@@ -8,7 +8,7 @@ Configuration:
   seed: # Set seed
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
-  load_checkpoint: False
+  load_checkpoint: True
   world_size: 1 # Maximum umber of Processes (DDP)
   show_training_sample: False
   #Train
@@ -28,8 +28,8 @@ Hyperparameter:
   model_selector: "GAN_generator,
     DCGAN_generator1,
     FCL_classical_discriminator,
-    CNN_classical_discriminator,
-    Hybrid_quantum_discriminator1,"
+    CNN_classical_discriminator1,
+    Hybrid_quantum_discriminator,"
   models:
     GAN_generator:
       learning_rate: 0.0002
