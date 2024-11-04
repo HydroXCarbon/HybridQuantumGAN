@@ -43,6 +43,5 @@ setup(
         "wandb==0.18.3",
         "colorama==0.4.6",
         "torchmetrics==1.4.2",
-        "torch-fidelity-0.3.0"
     ]
 )
