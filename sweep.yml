@@ -1,0 +1,25 @@
+program: ./src/main.py
+name: test-sweep
+method: bayes 
+metric:
+  goal: minimize   
+  name: FID  
+parameters:
+  model_selector:
+    values: ["GAN_generator",
+             "DCGAN_generator1",
+             "FCL_classical_discriminator",
+             "CNN_classical_discriminator1",
+             "Hybrid_quantum_discriminator1"]
+  learning_rate:
+    min: 1e-5
+    max: 1e-1
+    distribution: uniform
+  batch_size:
+    values: [16, 32, 64, 128] 
+  epochs:
+    values: [75] 
+  seed:
+    min: 0
+    max: 1000
+    distribution: uniform  

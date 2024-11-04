@@ -4,7 +4,7 @@ from colorama import Fore, Style
 def init_wandb(Hyperparameter, Configuration, run_id):
   project_name = Configuration['wandb']['project']
   entity_name = Configuration['wandb']['entity']
-
+  
   wandb_config={
           "epochs": Hyperparameter['epochs'],
           "batch_size": Hyperparameter['batch_size'],
@@ -38,7 +38,7 @@ def init_wandb(Hyperparameter, Configuration, run_id):
     for key, value in sweep_wandb_config.items():
       # Update Hyperparameter and Configuration
       print(key, value)
-      if key in ['epochs', 'batch_size', 'seed']:
+      if key in ['epochs', 'batch_size', 'seed', 'model_selector']:
         if key in Hyperparameter:
           Hyperparameter[key] = value
         elif key in Configuration:

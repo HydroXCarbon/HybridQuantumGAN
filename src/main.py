@@ -31,7 +31,8 @@ def main():
   # Load run_id from checkpoint
   if Configuration['load_checkpoint']:
     run_id = load_run_id(checkpoint_path)
-  print(Fore.GREEN + "Previous Run ID:" + Style.RESET_ALL + f" {run_id}")
+  if run_id:
+    print(Fore.GREEN + "Previous Run ID:" + Style.RESET_ALL + f" {run_id}")
 
   # Start wandb logging
   if Configuration['log_wandb']:
