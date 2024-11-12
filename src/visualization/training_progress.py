@@ -39,8 +39,9 @@ class PlotTrainingProgress:
 
 
     self.ax2.set_title(f"FID Score (Epoch {epoch})")
-    data, epoch = zip(*fid_score)
-    self.ax2.plot(epoch, data, marker='o')
+    if fid_score:
+      data, epoch = zip(*fid_score)
+      self.ax2.plot(epoch, data, marker='o')
     self.ax2.set_xlabel("Epochs")
     self.ax2.set_ylabel("FID Score")
     self.ax2.xaxis.set_major_locator(MaxNLocator(integer=True))

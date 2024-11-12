@@ -52,25 +52,27 @@ def train_model(rank,
 
   # Setup models and optimizers
   generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
-  print(f"Generator is running on device: {next(generator.parameters()).device}")
+  print(f"Process {rank}: is running on {next(generator.parameters()).device}")
 
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
   batch_size = train_loader.batch_size
   generated_samples_list = []
 
-  # Create instance for plotting
-  if rank == 0:
-    # Training loop
-    print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+  # Barrier
+  torch.distributed.barrier()
 
-    plot_progress = PlotTrainingProgress()
-    if show_training_evolution:
-      plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
+  # Training loop
+  print(f"Process {rank}: " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+
+  # Create instance for plotting
+  plot_progress = PlotTrainingProgress()
+  if show_training_evolution:
+    plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=0, initial=start_epoch)
-  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+1)
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
+  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
 
   # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
@@ -84,11 +86,11 @@ def train_model(rank,
       
     # Training loop (Batch)
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
-      real_samples = real_samples.to(device)
-      real_samples_labels = torch.ones((batch_size, 1)).to(device)
-      latent_space_samples = torch.randn((batch_size, 100)).to(device)
+      real_samples = real_samples.to(rank)
+      real_samples_labels = torch.ones((batch_size, 1)).to(rank)
+      latent_space_samples = torch.randn((batch_size, 100)).to(rank)
       generated_samples = generator(latent_space_samples)
-      generated_samples_labels = torch.zeros((batch_size, 1)).to(device)
+      generated_samples_labels = torch.zeros((batch_size, 1)).to(rank)
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
@@ -159,10 +161,10 @@ def train_model(rank,
   progress_bar_batch.close()
   progress_bar_epoch.close()
 
-  if rank == 0:
+  # Finish training
+  print(f"Process {rank}:" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
-    # Finish training
-    print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
+  if rank == 0:
 
     # Save final checkpoint
     save_checkpoint(epochs, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)

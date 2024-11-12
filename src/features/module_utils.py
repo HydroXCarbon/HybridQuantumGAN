@@ -15,18 +15,20 @@ def move_optimizer_to_device(optimizer, device):
 
 def move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device):
   # Move models to device and wrap with DistributedDataParallel
+  device = 'cpu' if device == 'cpu' else rank
+
   generator, discriminator_list = model_list[0], model_list[1:]
   optimizer_generator, optimizer_discriminator_list = optimizer_list[0], optimizer_list[1:]
 
   generator = generator.to(device)
-  if device.type == 'cpu':
+  if device == 'cpu':
     generator = DDP(generator)
   else:
     generator = DDP(generator, device_ids=[rank])
 
   for i in range(len(discriminator_list)):
     discriminator_list[i] = discriminator_list[i].to(device)
-    if device.type == 'cpu':
+    if device == 'cpu':
       discriminator_list[i] = DDP(discriminator_list[i])
     else:
       discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])

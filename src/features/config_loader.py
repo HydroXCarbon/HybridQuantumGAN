@@ -18,7 +18,9 @@ def load_configuration(Configuration):
   training = Configuration['training']
   world_size = Configuration['world_size']
   if device == 'cuda':
-    world_size = torch.cuda.device_count()
+    available_gpus = torch.cuda.device_count()
+    if world_size > available_gpus:
+        world_size = available_gpus
   show_training_process = Configuration['show_training_process']
   calculate_FID_score = Configuration['calculate_FID_score']
   calculate_FID_interval = Configuration['calculate_FID_interval']
