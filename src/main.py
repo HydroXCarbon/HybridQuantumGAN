@@ -35,10 +35,7 @@ def main():
     print(Fore.GREEN + "Previous Run ID:" + Style.RESET_ALL + f" {run_id}")
 
   # Start wandb logging
-  if Configuration['log_wandb']:
-    wandb_instant = init_wandb(Hyperparameter, Configuration, run_id)
-  else:
-    print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
+  wandb_instant = init_wandb(Hyperparameter, Configuration, run_id, Configuration['log_wandb'])
 
   #Load Hyperparameters
   model_selector, models, epochs, batch_size = load_hyperparameters(Hyperparameter)
@@ -71,12 +68,11 @@ def main():
                                                         optimizer_list=optimizer_list)
 
   # Update wandb config with models and optimizers
-  if log_wandb:
-      wandb.config.update({
-        "num_models": len(model_list),
-        "models": model_list,
-        "optimizer": optimizer_list,
-      })
+  wandb.config.update({
+    "num_models": len(model_list),
+    "models": model_list,
+    "optimizer": optimizer_list,
+  })
 
   # Train model using multiprocessing
   if training and epochs != start_epoch:
@@ -89,7 +85,6 @@ def main():
                 model_list, 
                 optimizer_list, 
                 checkpoint_path, 
-                log_wandb, 
                 show_training_process, 
                 show_training_evolution, 
                 calculate_FID_score, 

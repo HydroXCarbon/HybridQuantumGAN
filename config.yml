@@ -14,7 +14,7 @@ Configuration:
   #Train
   training: True
   # Evaluation
-  log_wandb: True # Note: Enable this when running sweep mode
+  log_wandb: False # Note: Enable this when running sweep mode
   show_training_process: False
   calculate_FID_score: False # Note: that Calculate FID take long time
   calculate_FID_interval: 5 # Calculate FID every n epochs

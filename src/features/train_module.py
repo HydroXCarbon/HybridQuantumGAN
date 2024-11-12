@@ -21,7 +21,6 @@ def train_model(rank,
                 model_list,
                 optimizer_list, 
                 checkpoint_path, 
-                log_wandb,
                 show_training_process,
                 show_training_evolution,
                 calculate_FID_score,
@@ -103,7 +102,7 @@ def train_model(rank,
           loss_values.discriminator_loss_values[discriminator.module.name] = []
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
         
-        if log_wandb:
+        if wandb_instant:
           wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator})
 
       # Training the generator
@@ -113,7 +112,7 @@ def train_model(rank,
         loss_values.generator_loss_values[generator.module.name] = []
       loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
-      if log_wandb:
+      if wandb_instant:
         wandb_instant.log({f"{generator.module.name}_loss": loss_generator})
 
       # Update the progress bar
@@ -132,8 +131,8 @@ def train_model(rank,
     if calculate_FID_score and epoch % calculate_FID_interval == 0:
         fid_value = fid.compute().cpu().detach().numpy().item()
         fid_score.append([fid_value, epoch])
-        if log_wandb:
-            wandb_instant.log({"FID": fid_value, "Epoch": epoch})
+        if wandb_instant:
+          wandb_instant.log({"FID": fid_value, "Epoch": epoch})
 
     # Update the progress bar
     progress_bar_epoch.update()

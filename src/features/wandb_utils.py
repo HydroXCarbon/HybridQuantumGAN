@@ -1,7 +1,7 @@
 import wandb
 from colorama import Fore, Style
 
-def init_wandb(Hyperparameter, Configuration, run_id):
+def init_wandb(Hyperparameter, Configuration, run_id, log_wandb):
   project_name = Configuration['wandb']['project']
   entity_name = Configuration['wandb']['entity']
   
@@ -10,15 +10,20 @@ def init_wandb(Hyperparameter, Configuration, run_id):
           "batch_size": Hyperparameter['batch_size'],
           "seed": Configuration['seed'],
   }
+  
   # Initialize wandb
-  wandb_instant = wandb.init(
-    project=project_name,
-    entity=entity_name,
-    config=wandb_config,
-    group="DDP",
-    resume="allow",
-    id=run_id
-  )
+  wandb_instant = None
+  if log_wandb:
+    wandb_instant = wandb.init(
+      project=project_name,
+      entity=entity_name,
+      config=wandb_config,
+      resume="allow",
+      id=run_id
+    )
+  else:
+    wandb.init(mode="disabled")
+    print(Fore.YELLOW + "wandb logging is disabled." + Style.RESET_ALL)
   
   # Disable some visualization if using wandb (sweep mode)
   if wandb.run and wandb.run.sweep_id is not None:
