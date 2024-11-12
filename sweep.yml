@@ -10,7 +10,7 @@ parameters:
       DCGAN_generator1,
       FCL_classical_discriminator,
       CNN_classical_discriminator1,
-      Hybrid_quantum_discriminator1,"]
+      Hybrid_quantum_discriminator,"]
   learning_rate:
     min: 1e-5
     max: 1e-1
