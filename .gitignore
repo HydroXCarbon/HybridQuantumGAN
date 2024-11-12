@@ -21,3 +21,9 @@ wandb/
 
 # Vscode 
 .vscode/
+
+# nohub
+nohup.out
+output.log
+
+QuantumGAN.egg-info
