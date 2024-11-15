@@ -118,12 +118,12 @@ def train_model(rank,
       # Update the progress bar
       progress_bar_batch.update()
 
-      # Denormalize and convert real and generated samples to uint8
-      real_samples_uint8 = denormalize_and_convert_uint8(real_samples).repeat(1, 3, 1, 1)
-      generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
-
       # Accumulate FID (real and generated samples) for this batch
       if calculate_FID_score and epoch % calculate_FID_interval == 0:
+        # Denormalize and convert real and generated samples to uint8
+        real_samples_uint8 = denormalize_and_convert_uint8(real_samples).repeat(1, 3, 1, 1)
+        generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
+
         fid.update(real_samples_uint8, real=True)
         fid.update(generated_samples_uint8, real=False)
 
