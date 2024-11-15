@@ -26,7 +26,6 @@ def load_configuration(Configuration):
   calculate_FID_interval = Configuration['calculate_FID_interval']
   show_training_evolution = Configuration['show_training_evolution']
   generate_data = Configuration['generate_data']
-  log_wandb = Configuration['log_wandb']
   
   # Set seed if defined
   if seed is not None:
@@ -36,4 +35,4 @@ def load_configuration(Configuration):
   return (device, save_sample_interval, checkpoint_interval, training_mode, 
     show_training_sample, load_checkpoint, training, world_size, 
     show_training_process, calculate_FID_score, calculate_FID_interval, 
-    show_training_evolution, generate_data, log_wandb)
+    show_training_evolution, generate_data)
