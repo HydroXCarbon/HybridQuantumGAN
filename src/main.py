@@ -52,6 +52,13 @@ def main():
   # Load models
   model_list, optimizer_list = get_model(models, model_selector)
 
+  # Load checkpoint
+  start_epoch, loss_values, fid_score = 0, None, []
+  if load_checkpoint: 
+    start_epoch, loss_values, fid_score, batch_size = get_checkpoint(checkpoint_path=checkpoint_path, 
+                                                        model_list=model_list,
+                                                        optimizer_list=optimizer_list)
+    
   # Load data
   train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
 
@@ -59,13 +66,6 @@ def main():
   if show_training_sample:
     real_samples, labels = next(iter(train_loader))
     show_sample_data(real_samples, title='Real Sample', sample_size=16)
-
-  # Load checkpoint
-  start_epoch, loss_values, fid_score = 0, None, []
-  if load_checkpoint:
-    start_epoch, loss_values, fid_score = get_checkpoint(checkpoint_path=checkpoint_path, 
-                                                        model_list=model_list,
-                                                        optimizer_list=optimizer_list)
 
   # Update wandb config with models and optimizers
   wandb.config.update({

@@ -4,10 +4,11 @@ from colorama import Fore, Style
 import torch
 import os
 
-def save_checkpoint(epoch, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant=None, finish=False):
+def save_checkpoint(epoch, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant=None, finish=False):
 	
 	checkpoint = {
 		'epoch': epoch,
+		'batch_size': batch_size,
 		'loss_values': loss_values,
 		'fid_score': fid_score,
 		'run_id': wandb_instant.id if wandb_instant else None,
@@ -58,6 +59,9 @@ def get_checkpoint(checkpoint_path, model_list, optimizer_list):
 			# Load FID score
 			fid_score = checkpoint['fid_score']
 
+			# Load batch_size
+			batch_size = checkpoint['batch_size']
+
 			# Load epoch
 			start_epoch = checkpoint['epoch'] + 1
 			print(Fore.GREEN + "Loading checkpoint: " + Style.RESET_ALL, end='')
@@ -66,4 +70,4 @@ def get_checkpoint(checkpoint_path, model_list, optimizer_list):
 			print(Fore.RED + "Error:" + Style.RESET_ALL + " checkpoint and model miss match at " + str(e))
 			exit(1)
 		
-	return start_epoch, loss_values, fid_score
+	return start_epoch, loss_values, fid_score, batch_size

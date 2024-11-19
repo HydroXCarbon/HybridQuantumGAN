@@ -150,7 +150,7 @@ def train_model(rank,
 
       # Save checkpoint at the specified interval
       if epoch % checkpoint_interval == 0 :
-        save_checkpoint(epoch, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
+        save_checkpoint(epoch, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
 
       # Plot the evolution of the generator
       if show_training_evolution:
