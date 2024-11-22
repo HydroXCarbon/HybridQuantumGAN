@@ -52,7 +52,7 @@ def train_model(rank,
 
   # Setup models and optimizers
   generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
-  print(f"Process {rank}: is running on {next(generator.parameters()).device}")
+  print(f"Process {rank} {(process_id)}: is running on {next(generator.parameters()).device}")
 
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
@@ -65,7 +65,7 @@ def train_model(rank,
   torch.distributed.barrier()
 
   # Training loop
-  print(f"Process {rank}{process_id}: " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+  print(f"Process {rank} {(process_id)}: " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
   # Create instance for plotting
   plot_progress = PlotTrainingProgress()
@@ -73,14 +73,14 @@ def train_model(rank,
     plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank}: Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
-  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank} {(process_id)}: Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
+  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank} {(process_id)}: Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
 
   # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
-    progress_bar_batch.set_description(f"Process {rank}: Training Epoch {epoch}")
+    progress_bar_batch.set_description(f"Process {rank} {(process_id)}: Training Epoch {epoch}")
     
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
@@ -164,7 +164,7 @@ def train_model(rank,
   progress_bar_epoch.close()
 
   # Finish training
-  print(f"Process {rank}:" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
+  print(f"Process {rank} {(process_id)}:" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   if rank == 0:
 
