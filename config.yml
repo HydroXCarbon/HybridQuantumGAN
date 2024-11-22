@@ -8,7 +8,7 @@ Configuration:
   seed: # Set seed
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
-  load_checkpoint: True
+  load_checkpoint: False
   world_size: 1 # Maximum number of Processes (DDP)
   show_training_sample: False
   #Train
@@ -50,7 +50,7 @@ Hyperparameter:
       loss_function: BCELoss
       optimizer: Adam
     CNN_classical_discriminator:
-      learning_rate: 0.0001
+      learning_rate: 0.00005
       betas: 0.9, 0.999
       model_class: CNN_Classical_Discriminator
       loss_function: BCELoss
