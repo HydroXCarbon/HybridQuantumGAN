@@ -170,6 +170,6 @@ def train_model(rank,
   if rank == 0:
 
     # Save final checkpoint
-    save_checkpoint(epochs, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)
+    save_checkpoint(epochs, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)
 
   cleanup()
