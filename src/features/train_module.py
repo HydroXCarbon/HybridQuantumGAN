@@ -6,6 +6,7 @@ from .DDP_utils import setup, cleanup
 from .module_utils import move_model_and_optimizer_to_device, train_discriminator, train_generator, denormalize_and_convert_uint8
 
 import torch
+import os
 
 class LossValues:
   def __init__(self):
@@ -58,11 +59,13 @@ def train_model(rank,
   batch_size = train_loader.batch_size
   generated_samples_list = []
 
+  process_id = os.getpid()
+
   # Barrier
   torch.distributed.barrier()
 
   # Training loop
-  print(f"Process {rank}: " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+  print(f"Process {rank}{process_id}: " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
   # Create instance for plotting
   plot_progress = PlotTrainingProgress()
