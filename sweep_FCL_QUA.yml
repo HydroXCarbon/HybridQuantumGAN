@@ -1,5 +1,5 @@
 program: ./src/main.py
-project: HybridQuantumGAN-FCL
+project: HybridQuantumGAN-FCL-QUA
 name: FCL-sweep
 method: bayes 
 metric:
