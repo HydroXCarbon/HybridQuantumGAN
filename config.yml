@@ -7,6 +7,7 @@ Configuration:
   device: cuda # 'cuda' or 'cpu'
   seed: # Set seed
   divergent_threshold: 3
+  slope_threshold: 0.5 # tan(angle of threshold)
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False

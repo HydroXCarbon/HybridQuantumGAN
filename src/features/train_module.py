@@ -29,6 +29,7 @@ def train_model(rank,
                 calculate_FID_interval,
                 wandb_instant,
                 divergent_threshold,
+                slope_threshold,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
@@ -173,15 +174,21 @@ def train_model(rank,
     # Check divergent and exit if detected
     if len(fid_score) >= divergent_threshold:
       recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+      slopes = [
+        recent_scores[i] - recent_scores[i - 1]
+        for i in range(1, len(recent_scores))
+      ]
+      average_slope = sum(slopes) / len(slopes)
+
       divergent_counter = sum(
         1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
       )
-      if divergent_counter == divergent_threshold - 1:
+      if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
         print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training and deleting W&B run.")
         
         # Delete the current WandB run
-        if wandb_instant.run is not None:
-            wandb_instant.run.delete()
+        if wandb_instant is not None:
+            wandb_instant.delete()
         
         # Exit the program
         sys.exit("Training stopped due to divergence.")
