@@ -7,6 +7,7 @@ from .module_utils import move_model_and_optimizer_to_device, train_discriminato
 
 import torch
 import os
+import sys 
 
 class LossValues:
   def __init__(self):
@@ -27,6 +28,7 @@ def train_model(rank,
                 calculate_FID_score,
                 calculate_FID_interval,
                 wandb_instant,
+                divergent_threshold,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
@@ -50,12 +52,20 @@ def train_model(rank,
   if calculate_FID_score:
     fid = FrechetInceptionDistance(feature=64).to(rank)
 
-  parent_process_id = os.getppid()
+  # Get PID
   process_id = os.getpid()
-
+  parent_process_id = os.getppid()
+  grandparent_process_id = None
+  try:
+    with open(f"/proc/{parent_process_id}/stat") as f:
+        stat_info = f.read().split()
+        grandparent_process_id = stat_info[3]  # PPID of the parent process
+  except FileNotFoundError:
+      print("Unable to retrieve grandparent process ID. The process may have terminated.")
+  
   # Setup models and optimizers
   generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
-  print(f"Process {rank} ({parent_process_id})({process_id}): is running on {next(generator.parameters()).device}")
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): is running on {next(generator.parameters()).device}")
 
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
@@ -66,7 +76,7 @@ def train_model(rank,
   torch.distributed.barrier()
 
   # Training loop
-  print(f"Process {rank} ({parent_process_id})({process_id}): " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
   # Create instance for plotting
   plot_progress = PlotTrainingProgress()
@@ -74,14 +84,14 @@ def train_model(rank,
     plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank} ({parent_process_id})({process_id}): Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
-  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank} ({parent_process_id})({process_id}): Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
+  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
 
   # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
     # Clear progress bar at the beginning of each epoch
     progress_bar_batch.reset()
-    progress_bar_batch.set_description(f"Process {rank} ({parent_process_id})({process_id}): Training Epoch {epoch}")
+    progress_bar_batch.set_description(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Training Epoch {epoch}")
     
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
@@ -160,12 +170,28 @@ def train_model(rank,
       if show_training_evolution:
         plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
+    # Check divergent and exit if detected
+    if len(fid_score) >= divergent_threshold:
+      recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+      divergent_counter = sum(
+        1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
+      )
+      if divergent_counter == divergent_threshold - 1:
+        print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training and deleting W&B run.")
+        
+        # Delete the current WandB run
+        if wandb_instant.run is not None:
+            wandb_instant.run.delete()
+        
+        # Exit the program
+        sys.exit("Training stopped due to divergence.")
+        
   # Close the progress bar
   progress_bar_batch.close()
   progress_bar_epoch.close()
 
   # Finish training
-  print(f"Process {rank} ({parent_process_id})({process_id}):" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}):" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   if rank == 0:
 

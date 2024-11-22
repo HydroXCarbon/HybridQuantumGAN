@@ -44,7 +44,7 @@ def main():
   (device, save_sample_interval, checkpoint_interval, training_mode, 
   show_training_sample, load_checkpoint, training, world_size, 
   show_training_process, calculate_FID_score, calculate_FID_interval, 
-  show_training_evolution, generate_data) = load_configuration(Configuration)
+  show_training_evolution, generate_data, divergent_threshold) = load_configuration(Configuration)
 
   # Use cuda if available
   device = get_device(device)
@@ -90,6 +90,7 @@ def main():
                 calculate_FID_score, 
                 calculate_FID_interval, 
                 wandb_instant,
+                divergent_threshold,
                 save_sample_interval, 
                 start_epoch, 
                 checkpoint_interval, 

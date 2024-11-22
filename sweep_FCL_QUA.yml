@@ -23,7 +23,7 @@ parameters:
   batch_size:
     values: [32, 64, 128] 
   epochs:
-    values: [40] 
+    values: [41] 
   seed:
     min: 0
     max: 1000
