@@ -3,7 +3,7 @@ import torch.nn as nn
 from models import *
 from colorama import Fore, Style, init
 
-def get_model(models, model_selector, device):
+def get_model(models, model_selector):
   model_list = []
   optimizer_list = []
   model_selector = model_selector.split(',')
@@ -11,7 +11,7 @@ def get_model(models, model_selector, device):
   
   # Initialize models dynamically
   print(Fore.GREEN + "Loading model: " + Style.RESET_ALL, end='')
-  for i, model_name in enumerate(models):
+  for model_name in models:
     if model_name not in model_selector:
       continue
     print(model_name, end=' ')
@@ -28,7 +28,6 @@ def get_model(models, model_selector, device):
 
     # Set up models dynamically
     model_instance = model_class()
-    model_instance = model_instance.to(device)
     model_instance.name = model_name
     
     # Dynamically retrieve the loss function class from torch.nn

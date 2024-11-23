@@ -40,7 +40,8 @@ setup(
         "python-dotenv==1.0.1",
         "PyYAML==6.0.2",
         "tqdm==4.66.5",
-        "wandb==0.17.7",
+        "wandb==0.18.3",
         "colorama==0.4.6",
+        "torchmetrics==1.4.2",
     ]
 )

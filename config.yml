@@ -1,61 +1,94 @@
 Configuration:
-  # Set up
-  device: cuda:0  # 'cuda:0' or 'cpu'
-  seed:   # Set seed
-  save_sample_interval: 1   # Save sample every n epochs
-  checkpoint_interval: 5  # Save model every n epochs 
-  training_mode: alternating  # training mode 'alternating' or 'combined' or 'continuous'
+  # Wandb
+  wandb:
+    project: "HybridQuantumGAN"
+    entity: "purin-pongpanich-mahidol-university"
+  # Preprocessing
+  device: cuda # 'cuda' or 'cpu'
+  seed: # Set seed
+  divergent_threshold: 3
+  slope_threshold: 35 # degree
+  checkpoint_interval: 1 # Save model state every n epochs
+  training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
+  world_size: 1 # Maximum number of Processes (DDP)
+  show_training_sample: False
+  #Train
   training: True
-  # Visualization
-  log_wandb: False
+  # Evaluation
+  log_wandb: True # Note: Enable this when running sweep mode
   show_training_process: False
+  calculate_FID_score: True # Note: that Calculate FID take long time
+  calculate_FID_interval: 5 # Calculate FID every n epochs
   show_training_evolution: False
+  save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
   generate_data: False
-  show_sample: False
 Hyperparameter:
   epochs: 50
   batch_size: 128
   # model selector can have only 1 generator at first index
-  model_selector: 'GAN_generator,
-                  DCGAN_generator,
-                  FLC_classical_discriminator, 
-                  CNN_classical_discriminator, 
-                  Hybrid_quantum_discriminator,'
+  model_selector: "GAN_generator,
+    DCGAN_generator1,
+    FCL_classical_discriminator,
+    CNN_classical_discriminator1,
+    Hybrid_quantum_discriminator,"
   models:
     GAN_generator:
       learning_rate: 0.0002
       betas: 0.9, 0.999
       model_class: GAN_Generator # Select Class for model from models.py
-      loss_function: BCELoss  # Any Binary Classification Loss
-      optimizer: Adam  # Recommend Adam or RMSprop
+      loss_function: BCELoss # Any Binary Classification Loss
+      optimizer: Adam # Recommend Adam or RMSprop
     DCGAN_generator:
       learning_rate: 0.0002
       betas: 0.9, 0.999
-      model_class: DCGAN_Generator 
-      loss_function: BCELoss  
-      optimizer: Adam 
-    FLC_classical_discriminator:
-      learning_rate: 0.0001
+      model_class: DCGAN_Generator
+      loss_function: BCELoss
+      optimizer: Adam
+    FCL_classical_discriminator:
+      learning_rate: 0.00005
       betas: 0.9, 0.999
-      model_class: FLC_Classical_Discriminator1
+      model_class: FCL_Classical_Discriminator
       loss_function: BCELoss
       optimizer: Adam
     CNN_classical_discriminator:
-      learning_rate: 0.0001
+      learning_rate: 0.00005
       betas: 0.9, 0.999
-      model_class: CNN_Classical_Discriminator1
+      model_class: CNN_Classical_Discriminator
       loss_function: BCELoss
       optimizer: Adam
     Hybrid_quantum_discriminator:
-      learning_rate: 0.0001
+      learning_rate: 0.00005
       betas: 0.9, 0.999
-      model_class: HybridQuantumDiscriminator1
+      model_class: HybridQuantumDiscriminator
       loss_function: BCELoss
       optimizer: Adam
     quantum_discriminator:
       learning_rate: 0.0001
       betas: 0.9, 0.999
-      model_class: QuantumDiscriminator1
+      model_class: QuantumDiscriminator
       loss_function: NLLLoss
       optimizer: Adam
+
+
+program: ./src/main.py
+method: bayes
+metric:
+  goal: minimize
+  name: "FID"
+parameters:
+  GAN_generator_learning_rate:
+    min: 0.00005
+    max: 0.0004
+  FCL_classical_discriminator_learning_rate:
+    min: 0.00001
+    max: 0.0002
+  epochs:
+    min: 40
+    max: 700
+  batch_size:
+    min: 32
+    max: 128
+  seed:
+    min: 1
+    max: 1000

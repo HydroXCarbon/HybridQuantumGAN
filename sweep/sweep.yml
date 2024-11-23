@@ -1,0 +1,30 @@
+program: ./src/main.py
+project: HybridQuantumGAN
+name: FCL-sweep
+method: bayes 
+metric:
+  goal: minimize   
+  name: FID  
+parameters:
+  model_selector:
+    values: ["GAN_generator,
+      DCGAN_generator1,
+      FCL_classical_discriminator,
+      CNN_classical_discriminator1,
+      Hybrid_quantum_discriminator1,"]
+  learning_rate_multiplier:
+    min: 2
+    max: 4
+    distribution: uniform
+  learning_rate:
+    min: 1e-5
+    max: 1e-4
+    distribution: uniform
+  batch_size:
+    values: [32, 64, 128] 
+  epochs:
+    values: [41] 
+  seed:
+    min: 0
+    max: 1000
+    distribution: int_uniform   

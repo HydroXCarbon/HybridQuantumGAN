@@ -1,8 +1,13 @@
 from visualization import PlotTrainingProgress, PlotEvolution
+from torchmetrics.image.fid import FrechetInceptionDistance
 from tqdm import tqdm
 from colorama import Fore, Style
+from .DDP_utils import setup, cleanup
+from .module_utils import move_model_and_optimizer_to_device, train_discriminator, train_generator, denormalize_and_convert_uint8
+
 import torch
-import wandb
+import os
+import sys 
 
 class LossValues:
   def __init__(self):
@@ -10,91 +15,97 @@ class LossValues:
     self.discriminator_loss_values = {}
     self.entropy_values = {}
 
-def train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph):
-  discriminator.zero_grad()
-  optimizer_discriminator.zero_grad()
-  output_discriminator = discriminator(all_samples)
-  loss_discriminator = discriminator.loss_function(output_discriminator, all_samples_labels)
-  loss_discriminator.backward(retain_graph=retain_graph)
-  optimizer_discriminator.step()
-  return loss_discriminator
-
-def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
-  generator.zero_grad()
-  generated_samples = generator(latent_space_samples)
-  
-  if training_mode == 'combined':
-    combined_output = torch.zeros_like(discriminator_list[0](generated_samples))
-    for discriminator in discriminator_list:
-      combined_output += discriminator(generated_samples)
-    combined_output /= len(discriminator_list)
-    loss_generator = generator.loss_function(combined_output, real_samples_labels)
-  elif training_mode == 'alternating':
-    discriminator = discriminator_list[epoch % num_discriminators]
-    output_discriminator_generated = discriminator(generated_samples)
-    loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
-  elif training_mode == 'continuous':
-    for discriminator in discriminator_list:
-      output_discriminator_generated = discriminator(generated_samples)
-      loss_generator = generator.loss_function(output_discriminator_generated, real_samples_labels)
-  else:
-    raise ValueError(f"Training mode {training_mode} not supported")
-
-  loss_generator.backward()
-  optimizer_generator.step()
-  return loss_generator
-
-def train_model(device, 
+def train_model(rank, 
+                world_size,
+                device, 
                 epochs, 
                 train_loader, 
                 model_list,
                 optimizer_list, 
-                checkpoint_folder, 
-                log_wandb,
+                checkpoint_path, 
                 show_training_process,
                 show_training_evolution,
+                calculate_FID_score,
+                calculate_FID_interval,
+                wandb_instant,
+                divergent_threshold,
+                slope_threshold,
                 save_sample_interval=1,
                 start_epoch=0,
                 checkpoint_interval=5,
                 training_mode='alternating',
-                loss_values=None):
+                loss_values=None,
+                fid_score=[]):
   from features import save_checkpoint
   from visualization import generate_sample
+
+  # Set up DistributedDataParallel
+  setup(rank, world_size, device)
 
   if loss_values is None:
     loss_values = LossValues()
 
-  # Setup models
-  generator = model_list[0]
-  optimizer_generator = optimizer_list[0]
-  discriminator_list = model_list[1:]
-  optimizer_discriminator_list = optimizer_list[1:]
+  # Fix bug Optimizer.name disappears when using DDP
+  for optimizer, model in zip(optimizer_list, model_list):
+    optimizer.name = 'optimizer_' + model.name
+
+  # Initialize FID metric
+  if calculate_FID_score:
+    fid = FrechetInceptionDistance(feature=64).to(rank)
+
+  # Get PID
+  process_id = os.getpid()
+  parent_process_id = os.getppid()
+  grandparent_process_id = None
+  try:
+    with open(f"/proc/{parent_process_id}/stat") as f:
+        stat_info = f.read().split()
+        grandparent_process_id = stat_info[3]  # PPID of the parent process
+  except FileNotFoundError:
+      print("Unable to retrieve grandparent process ID. The process may have terminated.")
+  
+  # Setup models and optimizers
+  generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): is running on {next(generator.parameters()).device}")
+
   num_discriminators = len(discriminator_list)
-  batch_size = train_loader.batch_size
-  generated_samples_list = []
   total_batches = len(train_loader)
-      
+  batch_size = train_loader.batch_size
+  steps_per_epoch = total_batches * batch_size
+  generated_samples_list = []
+
+  # Barrier
+  torch.distributed.barrier()
+
+  # Training loop
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
+
   # Create instance for plotting
   plot_progress = PlotTrainingProgress()
   if show_training_evolution:
     plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
-  # Training loop
-  print(Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
-  
   # Initialize progress bar
-  progress_bar_epoch = tqdm(total=epochs-start_epoch, desc=f"Model Progress", unit="epoch", leave=True)
-  
+  progress_bar_epoch = tqdm(total=epochs, desc=f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Model Progress", unit="epoch", leave=True, position=rank, initial=start_epoch)
+  progress_bar_batch = tqdm(total=total_batches, desc=f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Training Epoch {start_epoch}", unit="batch", leave=False, position=(rank*2)+world_size)
+
+  # Training loop (Epoch)
   for epoch_i, epoch in enumerate(range(start_epoch, epochs)):
-    # Initialize batch progress bar
-    progress_bar_batch = tqdm(total=total_batches, desc=f"Training Epoch {epoch}", unit="batch", leave=False)
+    # Clear progress bar at the beginning of each epoch
+    progress_bar_batch.reset()
+    progress_bar_batch.set_description(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Training Epoch {epoch}")
+    
+    # Clear FID metrics at the beginning of each epoch
+    if calculate_FID_score:
+      fid.reset()
       
+    # Training loop (Batch)
     for batch_i, (real_samples, mnist_labels) in enumerate(train_loader):
-      real_samples = real_samples.to(device=device)
-      real_samples_labels = torch.ones((batch_size, 1)).to(device=device)
-      latent_space_samples = torch.randn((batch_size, 100)).to(device=device)
+      real_samples = real_samples.to(rank)
+      real_samples_labels = torch.ones((batch_size, 1)).to(rank)
+      latent_space_samples = torch.randn((batch_size, 100)).to(rank)
       generated_samples = generator(latent_space_samples)
-      generated_samples_labels = torch.zeros((batch_size, 1)).to(device=device)
+      generated_samples_labels = torch.zeros((batch_size, 1)).to(rank)
       all_samples = torch.cat((real_samples, generated_samples))
       all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
@@ -102,63 +113,97 @@ def train_model(device,
       for i, (discriminator, optimizer_discriminator) in enumerate(zip(discriminator_list, optimizer_discriminator_list)):
         retain_graph = i < num_discriminators - 1
         loss_discriminator = train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph)
-        loss_discriminator = loss_discriminator.cpu().detach().numpy()
+
+        if discriminator.module.name not in loss_values.discriminator_loss_values:
+          loss_values.discriminator_loss_values[discriminator.module.name] = []
+        loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
         
-        if discriminator.name not in loss_values.discriminator_loss_values:
-          loss_values.discriminator_loss_values[discriminator.name] = []
-        loss_values.discriminator_loss_values[discriminator.name].append(loss_discriminator)
-        
-        if log_wandb:
-          wandb.log({f"{discriminator.name}_loss": loss_discriminator})
+        if wandb_instant:
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
-      generator_loss = loss_generator.cpu().detach().numpy()
           
-      if generator.name not in loss_values.generator_loss_values:
-        loss_values.generator_loss_values[generator.name] = []
-      loss_values.generator_loss_values[generator.name].append(generator_loss)
+      if generator.module.name not in loss_values.generator_loss_values:
+        loss_values.generator_loss_values[generator.module.name] = []
+      loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
-      if log_wandb:
-        wandb.log({f"{generator.name}_loss": generator_loss})
+      if wandb_instant:
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Update the progress bar
       progress_bar_batch.update()
 
-    # Update and Close the progress bar
-    progress_bar_data = {'loss_G': f"{loss_values.generator_loss_values[generator.name][-1]:.5f}"}
-    for i, discriminator in enumerate(loss_values.discriminator_loss_values.keys()):
-      progress_bar_data[f'loss d_{i}'] = f"{loss_values.discriminator_loss_values[discriminator][-1]:.5f}"
-    progress_bar_batch.set_postfix(progress_bar_data)
-    progress_bar_batch.close()
+      # Accumulate FID (real and generated samples) for this batch
+      if calculate_FID_score and epoch % calculate_FID_interval == 0:
+        # Denormalize and convert real and generated samples to uint8
+        real_samples_uint8 = denormalize_and_convert_uint8(real_samples).repeat(1, 3, 1, 1)
+        generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
+
+        fid.update(real_samples_uint8, real=True)
+        fid.update(generated_samples_uint8, real=False)
+
+    # Calculate FID score
+    if calculate_FID_score and epoch % calculate_FID_interval == 0:
+        fid_value = fid.compute().cpu().detach().numpy().item()
+        fid_score.append([fid_value, epoch])
+        if wandb_instant:
+          wandb_instant.log({"FID": fid_value, "Epoch": epoch})
+
+    # Update the progress bar
     progress_bar_epoch.update()
+
+    if rank == 0:
       
-    # Plot progress
-    if show_training_process:
-      plot_progress.plot(epoch, loss_values)
+      # Plot progress
+      if show_training_process:
+        plot_progress.plot(epoch, loss_values, fid_score)
 
-    # Save sample data at the specified interval
-    if (epoch + 1) % save_sample_interval == 0:
-      generated_samples = generate_sample(generator, device, 1)
-      generated_samples_list.append(generated_samples)
+      # Save sample data at the specified interval
+      if epoch % save_sample_interval == 0:
+        generated_samples = generate_sample(generator, device, 1)
+        generated_samples_list.append(generated_samples)
 
-    # Save checkpoint at the specified interval
-    if (epoch + 1) % checkpoint_interval == 0:
-      save_checkpoint(epoch, checkpoint_folder, model_list, optimizer_list, loss_values)    
+      # Save checkpoint at the specified interval
+      if epoch % checkpoint_interval == 0 :
+        save_checkpoint(epoch, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
 
-    # Plot the evolution of the generator
-    if show_training_evolution:
-      plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
+      # Plot the evolution of the generator
+      if show_training_evolution:
+        plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
+    # Check divergent and exit if detected
+    if len(fid_score) >= divergent_threshold:
+      recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+      slopes = [
+        recent_scores[i] - recent_scores[i - 1]
+        for i in range(1, len(recent_scores))
+      ]
+      average_slope = sum(slopes) / len(slopes)
+
+      divergent_counter = sum(
+        1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
+      )
+      if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
+        print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training and deleting W&B run.")
+        
+        # Finish the current WandB run
+        if wandb_instant is not None:
+            wandb_instant.finish()
+        
+        # Exit the program
+        sys.exit("Training stopped due to divergence.")
+        
   # Close the progress bar
+  progress_bar_batch.close()
   progress_bar_epoch.close()
 
   # Finish training
-  print(Fore.GREEN + 'Training finished' + Style.RESET_ALL)
+  print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}):" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
-  # Finish the wandb run
-  if log_wandb:
-    wandb.finish()
+  if rank == 0:
 
-  # Save final checkpoint
-  save_checkpoint(epochs, checkpoint_folder, model_list, optimizer_list, loss_values)
+    # Save final checkpoint
+    save_checkpoint(epochs, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)
+
+  cleanup()
