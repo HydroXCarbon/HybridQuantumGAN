@@ -6,17 +6,17 @@ Configuration:
   # Preprocessing
   device: cuda # 'cuda' or 'cpu'
   seed: # Set seed
-  divergent_threshold: 3
+  divergent_threshold: 3 # data point
   slope_threshold: 35 # degree
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
-  world_size: 1 # Maximum number of Processes (DDP)
+  world_size: 2 # Maximum number of Processes (DDP)
   show_training_sample: False
   #Train
   training: True
   # Evaluation
-  log_wandb: True # Note: Enable this when running sweep mode
+  log_wandb: False # Note: Enable this when running sweep mode
   show_training_process: False
   calculate_FID_score: True # Note: that Calculate FID take long time
   calculate_FID_interval: 5 # Calculate FID every n epochs
@@ -24,14 +24,14 @@ Configuration:
   save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
   generate_data: False
 Hyperparameter:
-  epochs: 50
-  batch_size: 128
+  epochs: 40
+  batch_size: 64
   # model selector can have only 1 generator at first index
   model_selector: "GAN_generator,
     DCGAN_generator1,
     FCL_classical_discriminator,
     CNN_classical_discriminator1,
-    Hybrid_quantum_discriminator,"
+    Hybrid_quantum_discriminator1,"
   models:
     GAN_generator:
       learning_rate: 0.0002
@@ -69,26 +69,3 @@ Hyperparameter:
       model_class: QuantumDiscriminator
       loss_function: NLLLoss
       optimizer: Adam
-
-
-program: ./src/main.py
-method: bayes
-metric:
-  goal: minimize
-  name: "FID"
-parameters:
-  GAN_generator_learning_rate:
-    min: 0.00005
-    max: 0.0004
-  FCL_classical_discriminator_learning_rate:
-    min: 0.00001
-    max: 0.0002
-  epochs:
-    min: 40
-    max: 700
-  batch_size:
-    min: 32
-    max: 128
-  seed:
-    min: 1
-    max: 1000

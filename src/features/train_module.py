@@ -1,13 +1,23 @@
-from visualization import PlotTrainingProgress, PlotEvolution
+from visualization import PlotTrainingProgress, PlotEvolution, show_sample_data
 from torchmetrics.image.fid import FrechetInceptionDistance
 from tqdm import tqdm
+from features import get_data_loader
 from colorama import Fore, Style
 from .DDP_utils import setup, cleanup
 from .module_utils import move_model_and_optimizer_to_device, train_discriminator, train_generator, denormalize_and_convert_uint8
 
+import signal
 import torch
 import os
-import sys 
+import sys
+
+# Add interrupt handler
+def interrupt_handler(signal, frame, wandb_instant, rank):
+    print(f"\n Process {rank}: Training interrupted. Cleaning up and shutting down...")
+    if wandb_instant is not None:
+        wandb_instant.finish()  # Finish any ongoing WandB session
+    cleanup()  # Cleanup DDP and other resources
+    sys.exit(0)  # Exit the program
 
 class LossValues:
   def __init__(self):
@@ -19,12 +29,14 @@ def train_model(rank,
                 world_size,
                 device, 
                 epochs, 
-                train_loader, 
+                batch_size,
                 model_list,
                 optimizer_list, 
                 checkpoint_path, 
+                data_folder,
                 show_training_process,
                 show_training_evolution,
+                show_training_sample,
                 calculate_FID_score,
                 calculate_FID_interval,
                 wandb_instant,
@@ -41,6 +53,9 @@ def train_model(rank,
 
   # Set up DistributedDataParallel
   setup(rank, world_size, device)
+
+  # Set interupt handler
+  signal.signal(signal.SIGINT, lambda s, f: interrupt_handler(s, f, wandb_instant))
 
   if loss_values is None:
     loss_values = LossValues()
@@ -64,13 +79,22 @@ def train_model(rank,
   except FileNotFoundError:
       print("Unable to retrieve grandparent process ID. The process may have terminated.")
   
+  # Load data
+  if rank==0:
+    batch_size = 32
+  train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder, rank=rank, world_size=world_size)
+
+  # Plot some training samples
+  if show_training_sample:
+    real_samples, labels = next(iter(train_loader))
+    show_sample_data(real_samples, title='Real Sample', sample_size=16)
+
   # Setup models and optimizers
   generator, discriminator_list, optimizer_generator, optimizer_discriminator_list = move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device)
   print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): is running on {next(generator.parameters()).device}")
 
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
-  batch_size = train_loader.batch_size
   steps_per_epoch = total_batches * batch_size
   generated_samples_list = []
 
@@ -95,6 +119,9 @@ def train_model(rank,
     progress_bar_batch.reset()
     progress_bar_batch.set_description(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Training Epoch {epoch}")
     
+    # Set epoch for train_loader
+    train_loader.sampler.set_epoch(epoch)
+
     # Clear FID metrics at the beginning of each epoch
     if calculate_FID_score:
       fid.reset()
@@ -185,14 +212,14 @@ def train_model(rank,
         1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
       )
       if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
-        print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training and deleting W&B run.")
+        print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected: Recent scores={recent_scores}, Slopes={slopes}, Average Slope={average_slope}")
         
         # Finish the current WandB run
         if wandb_instant is not None:
             wandb_instant.finish()
         
-        # Exit the program
-        sys.exit("Training stopped due to divergence.")
+        # end this process
+        return
         
   # Close the progress bar
   progress_bar_batch.close()
