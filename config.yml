@@ -4,19 +4,19 @@ Configuration:
     project: "HybridQuantumGAN"
     entity: "purin-pongpanich-mahidol-university"
   # Preprocessing
-  device: cuda # 'cuda' or 'cpu'
+  device: cuda:1 # 'cuda' or 'cpu'
   seed: # Set seed
   divergent_threshold: 3 # data point
   slope_threshold: 35 # degree
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
-  world_size: 2 # Maximum number of Processes (DDP)
+  world_size: 1 # Maximum number of Processes (DDP)
   show_training_sample: False
   #Train
   training: True
   # Evaluation
-  log_wandb: False # Note: Enable this when running sweep mode
+  log_wandb: True # Note: Enable this when running sweep mode
   show_training_process: False
   calculate_FID_score: True # Note: that Calculate FID take long time
   calculate_FID_interval: 5 # Calculate FID every n epochs
