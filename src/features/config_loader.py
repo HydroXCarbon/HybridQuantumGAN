@@ -1,4 +1,5 @@
 import torch
+import math
 
 def load_hyperparameters(Hyperparameter):
   model_selector = Hyperparameter['model_selector']
@@ -27,7 +28,7 @@ def load_configuration(Configuration):
   show_training_evolution = Configuration['show_training_evolution']
   generate_data = Configuration['generate_data']
   divergent_threshold = Configuration['divergent_threshold']
-  slope_threshold = Configuration['slope_threshold']
+  slope_threshold = math.tan(Configuration['slope_threshold'])
 
   # Set seed if defined
   if seed is not None:
