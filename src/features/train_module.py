@@ -71,6 +71,7 @@ def train_model(rank,
   num_discriminators = len(discriminator_list)
   total_batches = len(train_loader)
   batch_size = train_loader.batch_size
+  steps_per_epoch = total_batches * batch_size
   generated_samples_list = []
 
   # Barrier
@@ -118,7 +119,7 @@ def train_model(rank,
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
         
         if wandb_instant:
-          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator})
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
@@ -128,7 +129,7 @@ def train_model(rank,
       loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
       if wandb_instant:
-        wandb_instant.log({f"{generator.module.name}_loss": loss_generator})
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Update the progress bar
       progress_bar_batch.update()
@@ -186,9 +187,9 @@ def train_model(rank,
       if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
         print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training and deleting W&B run.")
         
-        # Delete the current WandB run
+        # Finish the current WandB run
         if wandb_instant is not None:
-            wandb_instant.delete()
+            wandb_instant.finish()
         
         # Exit the program
         sys.exit("Training stopped due to divergence.")
