@@ -63,7 +63,7 @@ def train_model(rank,
   try:
     with open(f"/proc/{parent_process_id}/stat") as f:
         stat_info = f.read().split()
-        grandparent_process_id = stat_info[3]  # PPID of the parent process
+        grandparent_process_id = stat_info[3]
   except FileNotFoundError:
       print("Unable to retrieve grandparent process ID. The process may have terminated.")
   
@@ -159,28 +159,21 @@ def train_model(rank,
         real_samples_uint8 = denormalize_and_convert_uint8(real_samples).repeat(1, 3, 1, 1)
         generated_samples_uint8 = denormalize_and_convert_uint8(generated_samples).repeat(1, 3, 1, 1)
 
-        # Gather samples from all processes
-        real_samples_all = [torch.zeros_like(real_samples_uint8) for _ in range(world_size)]
-        generated_samples_all = [torch.zeros_like(generated_samples_uint8) for _ in range(world_size)]
-        
-        torch.distributed.all_gather(real_samples_all, real_samples_uint8)
-        torch.distributed.all_gather(generated_samples_all, generated_samples_uint8)
-
-        if rank == 0:
-            # Combine the samples on rank 0
-            real_samples_combined = torch.cat(real_samples_all, dim=0)
-            generated_samples_combined = torch.cat(generated_samples_all, dim=0)
-
-            # Update FID metric with the combined samples
-            fid.update(real_samples_combined[::num_discriminators], real=True)
-            fid.update(generated_samples_combined[::num_discriminators], real=False)
+        # Update FID metric with the combined samples
+        fid.update(real_samples_uint8, real=True)
+        fid.update(real_samples_uint8, real=False)
 
     # Calculate FID score
-    if calculate_FID_score and epoch % calculate_FID_interval == 0 and rank == 0:
+    if calculate_FID_score and epoch % calculate_FID_interval == 0:
         fid_value = fid.compute().cpu().detach().numpy().item()
         fid_score.append([fid_value, epoch])
-        if wandb_instant:
-          wandb_instant.log({"FID": fid_value, "Epoch": epoch})
+        if wandb_instant and rank == 0:
+          fid_value_tensor = torch.tensor([fid_value], device='cuda')
+          fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(torch.distributed.get_world_size())]
+          torch.distributed.all_gather(fid_value_all, fid_value_tensor)
+          fid_value_combined = torch.cat(fid_value_all, dim=0)
+          fid_value_avg = fid_value_combined.mean().item()
+          wandb_instant.log({"FID": fid_value_avg, "Epoch": epoch})
 
     # Update the progress bar
     progress_bar_epoch.update()

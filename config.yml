@@ -4,14 +4,14 @@ Configuration:
     project: "HybridQuantumGAN"
     entity: "purin-pongpanich-mahidol-university"
   # Preprocessing
-  device: cuda:1 # 'cuda' or 'cpu'
+  device: cuda # 'cuda' or 'cpu'
   seed: # Set seed
   divergent_threshold: 3 # data point
   slope_threshold: 35 # degree
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
-  world_size: 1 # Maximum number of Processes (DDP)
+  world_size: 2 # Maximum number of Processes (DDP)
   show_training_sample: False
   #Train
   training: True
