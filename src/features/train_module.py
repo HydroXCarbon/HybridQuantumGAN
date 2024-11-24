@@ -91,7 +91,7 @@ def train_model(rank,
     divergence_flag = torch.tensor([0], dtype=torch.int).to(torch.device(f"cuda:{rank}"))
 
   # Barrier
-  torch.distributed.barrier()
+  dist.barrier()
 
   # Training loop
   print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
@@ -138,7 +138,7 @@ def train_model(rank,
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
         
         if wandb_instant and rank ==0:
-          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator, 'Step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
@@ -148,7 +148,7 @@ def train_model(rank,
       loss_values.generator_loss_values[generator.module.name].append(loss_generator)
       
       if wandb_instant and rank ==0:
-        wandb_instant.log({f"{generator.module.name}_loss": loss_generator, 'step': epoch_i * steps_per_epoch + batch_i * batch_size})
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator, 'Step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Update the progress bar
       progress_bar_batch.update()
@@ -161,18 +161,22 @@ def train_model(rank,
 
         # Update FID metric with the combined samples
         fid.update(real_samples_uint8, real=True)
-        fid.update(real_samples_uint8, real=False)
-
+        fid.update(generated_samples_uint8, real=False)
+    
     # Calculate FID score
     if calculate_FID_score and epoch % calculate_FID_interval == 0:
         fid_value = fid.compute().cpu().detach().numpy().item()
-        fid_score.append([fid_value, epoch])
+        fid_value_tensor = torch.tensor([fid_value], device=device)
+        if device.type != 'cpu':
+          fid_value_tensor = torch.tensor([fid_value], device=f"cuda:{rank}")
+        
+        fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(dist.get_world_size())]
+        dist.all_gather(fid_value_all, fid_value_tensor)
+        fid_value_combined = torch.cat(fid_value_all, dim=0)
+        fid_value_avg = fid_value_combined.mean().item()
+        fid_score.append([fid_value_avg, epoch])
+
         if wandb_instant and rank == 0:
-          fid_value_tensor = torch.tensor([fid_value], device='cuda')
-          fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(torch.distributed.get_world_size())]
-          torch.distributed.all_gather(fid_value_all, fid_value_tensor)
-          fid_value_combined = torch.cat(fid_value_all, dim=0)
-          fid_value_avg = fid_value_combined.mean().item()
           wandb_instant.log({"FID": fid_value_avg, "Epoch": epoch})
 
     # Update the progress bar
@@ -197,22 +201,23 @@ def train_model(rank,
       if show_training_evolution:
         plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
-      # Check divergent and exit if detected
-      if len(fid_score) >= divergent_threshold:
-        recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
-        slopes = [
-          recent_scores[i] - recent_scores[i - 1]
-          for i in range(1, len(recent_scores))
-        ]
-        average_slope = sum(slopes) / len(slopes)
+    # Check divergent
+    if len(fid_score) >= divergent_threshold:
+      recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+      slopes = [
+        recent_scores[i] - recent_scores[i - 1]
+        for i in range(1, len(recent_scores))
+      ]
+      average_slope = sum(slopes) / len(slopes)
 
-        divergent_counter = sum(
-          1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
-        )
-        if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
-          divergence_flag.fill_(1)
+      divergent_counter = sum(
+        1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
+      )
+      if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
+        divergence_flag.fill_(1)
+    
     # Barrier
-    torch.distributed.barrier()
+    dist.barrier()
 
     dist.all_reduce(divergence_flag, op=dist.ReduceOp.SUM)
 
@@ -220,7 +225,7 @@ def train_model(rank,
       # Finish the current WandB run
       if wandb_instant is not None:
           wandb_instant.finish()
-      print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}):: Divergence detected. Stopping training.")
+      print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training.")
       return
         
   # Close the progress bar
