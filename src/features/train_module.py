@@ -53,7 +53,7 @@ def train_model(rank,
     optimizer.name = 'optimizer_' + model.name
 
   # Initialize FID metric
-  if calculate_FID_score and rank == 0:
+  if calculate_FID_score:
     fid = FrechetInceptionDistance(feature=64).to(rank)
 
   # Get PID
@@ -115,7 +115,7 @@ def train_model(rank,
     train_loader.sampler.set_epoch(epoch)
 
     # Clear FID metrics at the beginning of each epoch
-    if calculate_FID_score and rank == 0:
+    if calculate_FID_score:
       fid.reset()
       
     # Training loop (Batch)
