@@ -29,13 +29,8 @@ def load_configuration(Configuration):
   generate_data = Configuration['generate_data']
   divergent_threshold = Configuration['divergent_threshold']
   slope_threshold = math.tan(Configuration['slope_threshold'])
-
-  # Set seed if defined
-  if seed is not None:
-    torch.manual_seed(seed)
-    # algorithm_globals.random_seed = seed
   
   return (device, save_sample_interval, checkpoint_interval, training_mode, 
     show_training_sample, load_checkpoint, training, world_size, 
     show_training_process, calculate_FID_score, calculate_FID_interval, 
-    show_training_evolution, generate_data, divergent_threshold, slope_threshold)
+    show_training_evolution, generate_data, divergent_threshold, slope_threshold, seed)

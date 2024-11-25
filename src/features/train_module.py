@@ -18,6 +18,7 @@ class LossValues:
 
 def train_model(rank, 
                 world_size,
+                seed,
                 device, 
                 epochs, 
                 batch_size,
@@ -46,6 +47,10 @@ def train_model(rank,
   if device != 'cpu':
     device = torch.device(f"cuda:{rank}")
   setup(rank, world_size, device)
+
+  # Set unique seed for each process
+  if seed is not None:
+    torch.manual_seed(seed + rank)
 
   if loss_values is None:
     loss_values = LossValues()
@@ -174,9 +179,11 @@ def train_model(rank,
     if calculate_FID_score and epoch % calculate_FID_interval == 0:
       fid_value = fid.compute().cpu().detach().numpy().item()
       fid_value_tensor = torch.tensor([fid_value], device=device)
-
+      print( f'{rank}              {fid_value_tensor}')
       fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(world_size)]
       dist.all_gather(fid_value_all, fid_value_tensor)
+      print( f'{rank}              {fid_value_all}')
+      
       fid_value_all = sum([d.item() for d in fid_value_all]) / len(fid_value_all)
       fid_score.append([fid_value_all, epoch])
 
