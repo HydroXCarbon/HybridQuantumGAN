@@ -1,6 +1,6 @@
 program: ./src/main.py
-project: HybridQuantumGAN-FCL-QUA
-name: FCL-sweep
+project: HybridQuantumGAN
+name: FCL-QUA-Normal
 method: bayes 
 metric:
   goal: minimize   

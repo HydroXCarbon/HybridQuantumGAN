@@ -43,6 +43,8 @@ def train_model(rank,
   from visualization import generate_sample
 
   # Set up DistributedDataParallel
+  if device != 'cpu':
+    device = torch.device(f"cuda:{rank}")
   setup(rank, world_size, device)
 
   if loss_values is None:
@@ -85,10 +87,7 @@ def train_model(rank,
   generated_samples_list = []
 
   # Set up a global flag for termination
-  if device.type =='cpu':
-    divergence_flag = torch.tensor([0], dtype=torch.int).to(device)
-  else:
-    divergence_flag = torch.tensor([0], dtype=torch.int).to(torch.device(f"cuda:{rank}"))
+  divergence_flag = torch.tensor([0], dtype=torch.int).to(device)
 
   # Barrier
   dist.barrier()
@@ -132,23 +131,31 @@ def train_model(rank,
       for i, (discriminator, optimizer_discriminator) in enumerate(zip(discriminator_list, optimizer_discriminator_list)):
         retain_graph = i < num_discriminators - 1
         loss_discriminator = train_discriminator(discriminator, optimizer_discriminator, all_samples, all_samples_labels, retain_graph)
+        loss_discriminator_all = [torch.zeros_like(loss_discriminator) for _ in range(world_size)]
+
+        dist.all_gather(loss_discriminator_all, loss_discriminator)
+        loss_discriminator_all = sum([d.item() for d in loss_discriminator_all]) / len(loss_discriminator_all)
 
         if discriminator.module.name not in loss_values.discriminator_loss_values:
           loss_values.discriminator_loss_values[discriminator.module.name] = []
-        loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator)
+        loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator_all)
         
         if wandb_instant and rank ==0:
-          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator_all, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
-          
+      loss_generator_all = [torch.zeros_like(loss_generator) for _ in range(world_size)]
+
+      dist.all_gather(loss_generator_all, loss_generator)
+      loss_generator_all = sum([d.item() for d in loss_generator_all]) / len(loss_generator_all)
+      
       if generator.module.name not in loss_values.generator_loss_values:
         loss_values.generator_loss_values[generator.module.name] = []
-      loss_values.generator_loss_values[generator.module.name].append(loss_generator)
+      loss_values.generator_loss_values[generator.module.name].append(loss_generator_all)
       
       if wandb_instant and rank ==0:
-        wandb_instant.log({f"{generator.module.name}_loss": loss_generator, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator_all, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
 
       # Update the progress bar
       progress_bar_batch.update()
@@ -165,19 +172,16 @@ def train_model(rank,
     
     # Calculate FID score
     if calculate_FID_score and epoch % calculate_FID_interval == 0:
-        fid_value = fid.compute().cpu().detach().numpy().item()
-        fid_value_tensor = torch.tensor([fid_value], device=device)
-        if device.type != 'cpu':
-          fid_value_tensor = torch.tensor([fid_value], device=f"cuda:{rank}")
-        
-        fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(dist.get_world_size())]
-        dist.all_gather(fid_value_all, fid_value_tensor)
-        fid_value_combined = torch.cat(fid_value_all, dim=0)
-        fid_value_avg = fid_value_combined.mean().item()
-        fid_score.append([fid_value_avg, epoch])
+      fid_value = fid.compute().cpu().detach().numpy().item()
+      fid_value_tensor = torch.tensor([fid_value], device=device)
 
-        if wandb_instant and rank == 0:
-          wandb_instant.log({"FID": fid_value_avg, "Epoch": epoch})
+      fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(world_size)]
+      dist.all_gather(fid_value_all, fid_value_tensor)
+      fid_value_all = sum([d.item() for d in fid_value_all]) / len(fid_value_all)
+      fid_score.append([fid_value_all, epoch])
+
+      if wandb_instant and rank == 0:
+        wandb_instant.log({"FID": fid_value_all, "Epoch": epoch})
 
     # Update the progress bar
     progress_bar_epoch.update()
@@ -201,20 +205,20 @@ def train_model(rank,
       if show_training_evolution:
         plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
-    # Check divergent
-    if len(fid_score) >= divergent_threshold:
-      recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
-      slopes = [
-        recent_scores[i] - recent_scores[i - 1]
-        for i in range(1, len(recent_scores))
-      ]
-      average_slope = sum(slopes) / len(slopes)
+      # Check divergent
+      if len(fid_score) >= divergent_threshold:
+        recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+        slopes = [
+          recent_scores[i] - recent_scores[i - 1]
+          for i in range(1, len(recent_scores))
+        ]
+        average_slope = sum(slopes) / len(slopes)
 
-      divergent_counter = sum(
-        1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
-      )
-      if divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold:
-        divergence_flag.fill_(1)
+        divergent_counter = sum(
+          1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
+        )
+        if (divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold) or fid_score[0] < fid_score[-1]:
+          divergence_flag.fill_(1)
     
     # Barrier
     dist.barrier()
@@ -222,9 +226,6 @@ def train_model(rank,
     dist.all_reduce(divergence_flag, op=dist.ReduceOp.SUM)
 
     if divergence_flag.item() > 0:
-      # Finish the current WandB run
-      if wandb_instant is not None:
-          wandb_instant.finish()
       print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): Divergence detected. Stopping training.")
       return
         

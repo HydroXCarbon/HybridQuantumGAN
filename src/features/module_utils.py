@@ -47,7 +47,7 @@ def train_discriminator(discriminator, optimizer_discriminator, all_samples, all
   loss_discriminator = discriminator.module.loss_function(output_discriminator, all_samples_labels)
   loss_discriminator.backward(retain_graph=retain_graph)
   optimizer_discriminator.step()
-  return loss_discriminator.cpu().detach().numpy()
+  return loss_discriminator
 
 def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
   generator.zero_grad()
@@ -72,7 +72,7 @@ def train_generator(generator, discriminator_list, optimizer_generator, latent_s
 
   loss_generator.backward()
   optimizer_generator.step()
-  return loss_generator.cpu().detach().numpy()
+  return loss_generator
 
 def denormalize_and_convert_uint8(images):
   images = (images * 0.5 + 0.5) * 255.0  

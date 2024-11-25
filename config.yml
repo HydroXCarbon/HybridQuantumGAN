@@ -11,7 +11,7 @@ Configuration:
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False
-  world_size: 2 # Maximum number of Processes (DDP)
+  world_size: 1 # Maximum number of Processes (DDP)
   show_training_sample: False
   #Train
   training: True

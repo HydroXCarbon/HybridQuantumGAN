@@ -1,6 +1,6 @@
 program: ./src/main.py
 project: HybridQuantumGAN
-name: FCL-sweep
+name: sweep
 method: bayes 
 metric:
   goal: minimize   

@@ -1,9 +1,9 @@
 program: ./src/main.py
-project: HybridQuantumGAN-FCL
-name: FCL-sweep
+project: HybridQuantumGAN
+name: FCL-Normal
 method: bayes 
 metric:
-  goal: minimize   
+  goal: minimize
   name: FID  
 parameters:
   model_selector:
