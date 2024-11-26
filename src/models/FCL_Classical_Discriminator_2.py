@@ -1,6 +1,6 @@
 from torch import nn
 
-class FCL_Classical_Discriminator(nn.Module):
+class FCL_Classical_Discriminator_2(nn.Module):
   def __init__(self):
     super().__init__()
     self.model = nn.Sequential(

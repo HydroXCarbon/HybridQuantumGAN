@@ -30,7 +30,9 @@ Hyperparameter:
   model_selector: "GAN_generator1,
     DC_generator,
     DC_classical_Discriminator,
-    FCL_classical_discriminator1,
+    FCL_classical_discriminator_11,
+    FCL_classical_discriminator_21,
+    FCL_classical_discriminator_31,
     CNN_classical_discriminator1,
     Hybrid_quantum_discriminator1,"
   models:
@@ -52,10 +54,22 @@ Hyperparameter:
       model_class: DC_Classical_Discriminator
       loss_function: BCELoss
       optimizer: Adam
-    FCL_classical_discriminator:
+    FCL_classical_discriminator_1:
       learning_rate: 0.00005
       betas: 0.9, 0.999
-      model_class: FCL_Classical_Discriminator
+      model_class: FCL_Classical_Discriminator_1
+      loss_function: BCELoss
+      optimizer: Adam
+    FCL_classical_discriminator_2:
+      learning_rate: 0.00005
+      betas: 0.9, 0.999
+      model_class: FCL_Classical_Discriminator_2
+      loss_function: BCELoss
+      optimizer: Adam
+    FCL_classical_discriminator_3:
+      learning_rate: 0.00005
+      betas: 0.9, 0.999
+      model_class: FCL_Classical_Discriminator_3
       loss_function: BCELoss
       optimizer: Adam
     CNN_classical_discriminator:
