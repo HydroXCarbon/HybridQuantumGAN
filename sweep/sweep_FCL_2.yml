@@ -1,17 +1,17 @@
 program: ./src/main.py
 project: HybridQuantumGAN
-name: DCGAN-Normal
+name: FCL-2-Normal
 method: bayes 
 metric:
   goal: minimize
-  name: DC_generator  
+  name: GAN_generator_loss  
 parameters:
   model_selector:
-    values: ["GAN_generator1,
-      DC_generator,
-      DC_classical_Discriminator,
+    values: ["GAN_generator,
+      DC_generator1,
+      DC_classical_Discriminator1,
       FCL_classical_discriminator_11,
-      FCL_classical_discriminator_21,
+      FCL_classical_discriminator_2,
       FCL_classical_discriminator_31,
       CNN_classical_discriminator1,
       Hybrid_quantum_discriminator1,"]

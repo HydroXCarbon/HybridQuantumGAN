@@ -41,6 +41,7 @@ def init_wandb(Hyperparameter, Configuration, run_id, log_wandb):
     # Override local configuration with wandb config (sweep mode)
     sweep_wandb_config = wandb.config
     learning_rate_multiplier = 1
+    learning_rate = 1e-4
     for key, value in sweep_wandb_config.items():
       # Update Hyperparameter and Configuration
       print(key, value)
@@ -51,12 +52,14 @@ def init_wandb(Hyperparameter, Configuration, run_id, log_wandb):
           Configuration[key] = value
       # Update model and optimizer learning rate
       elif key == 'learning_rate':
-        for model_name in Hyperparameter['models']:
-          if model_name.endswith('generator'):
-            Hyperparameter['models'][model_name]['learning_rate'] = value * learning_rate_multiplier
-          elif model_name.endswith('discriminator'):
-            Hyperparameter['models'][model_name]['learning_rate'] = value
+        learning_rate = value
       elif key == 'learning_rate_multiplier':
-        learning_rate_multiplier= value
+        learning_rate_multiplier = value
+
+    for model_name in Hyperparameter['models']:
+      if model_name.endswith('generator'):
+        Hyperparameter['models'][model_name]['learning_rate'] = learning_rate * learning_rate_multiplier
+      elif model_name.endswith('discriminator'):
+        Hyperparameter['models'][model_name]['learning_rate'] = learning_rate
 
   return wandb_instant

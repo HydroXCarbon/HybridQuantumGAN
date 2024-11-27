@@ -44,13 +44,13 @@ Hyperparameter:
       optimizer: Adam # Recommend Adam or RMSprop
     DC_generator:
       learning_rate: 0.0002
-      betas: 0.9, 0.999
+      betas: 0.5, 0.999
       model_class: DC_Generator
       loss_function: BCELoss
       optimizer: Adam
     DC_classical_Discriminator:
-      learning_rate: 0.00005
-      betas: 0.9, 0.999
+      learning_rate: 0.0002
+      betas: 0.5, 0.999
       model_class: DC_Classical_Discriminator
       loss_function: BCELoss
       optimizer: Adam

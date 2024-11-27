@@ -119,7 +119,7 @@ def train_model(rank,
     train_loader.sampler.set_epoch(epoch)
 
     # Clear FID metrics at the beginning of each epoch
-    if calculate_FID_score:
+    if calculate_FID_score and epoch % calculate_FID_interval == 0:
       fid.reset()
       
     # Training loop (Batch)
@@ -177,8 +177,7 @@ def train_model(rank,
     
     # Calculate FID score
     if calculate_FID_score and epoch % calculate_FID_interval == 0:
-      fid_value = fid.compute().cpu().detach().numpy().item()
-      fid_value_tensor = torch.tensor([fid_value], device=device)
+      fid_value_tensor = torch.tensor([fid.compute().item()], device=device)
 
       fid_value_all = [torch.zeros_like(fid_value_tensor) for _ in range(world_size)]
       dist.all_gather(fid_value_all, fid_value_tensor)
