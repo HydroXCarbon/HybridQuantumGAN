@@ -8,19 +8,13 @@ metric:
 parameters:
   model_selector:
     values: ["GAN_generator,
-      DC_generator1,
-      DC_classical_Discriminator1,
-      FCL_classical_discriminator_11,
-      FCL_classical_discriminator_21,
-      FCL_classical_discriminator_3,
-      CNN_classical_discriminator1,
-      Hybrid_quantum_discriminator1,"]
+      FCL_classical_discriminator_3,"]
   learning_rate_multiplier:
     min: 3
-    max: 6
+    max: 5
     distribution: uniform
   learning_rate:
-    min: 5e-5
+    min: 1e-5
     max: 5e-4
     distribution: uniform
   batch_size:

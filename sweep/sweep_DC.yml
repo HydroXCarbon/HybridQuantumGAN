@@ -17,7 +17,7 @@ parameters:
       Hybrid_quantum_discriminator1,"]
   learning_rate_multiplier:
     min: 3
-    max: 6
+    max: 5
     distribution: uniform
   learning_rate:
     min: 5e-5
