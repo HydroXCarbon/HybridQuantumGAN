@@ -3,11 +3,14 @@ Configuration:
   wandb:
     project: "HybridQuantumGAN"
     entity: "purin-pongpanich-mahidol-university"
+  # Divergent detector threshold
+  sample_point_threshold: 3 # data point
+  slope_threshold: 35 # degree
+  epoch_threshold: 5 # check divergent after
+  loss_threshold: 0.001 # check loss if less than threshold 
   # Preprocessing
   device: cuda # 'cuda' or 'cpu'
   seed: # Set seed
-  divergent_threshold: 3 # data point
-  slope_threshold: 35 # degree
   checkpoint_interval: 1 # Save model state every n epochs
   training_mode: combined # Training mode 'alternating' or 'combined' or 'continuous'
   load_checkpoint: False

@@ -32,7 +32,9 @@ def train_model(rank,
                 calculate_FID_score,
                 calculate_FID_interval,
                 wandb_instant,
-                divergent_threshold,
+                sample_point_threshold,
+                epoch_threshold,
+                loss_threshold,
                 slope_threshold,
                 save_sample_interval=1,
                 start_epoch=0,
@@ -211,8 +213,8 @@ def train_model(rank,
         plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
 
       # Check divergent
-      if len(fid_score) >= divergent_threshold:
-        recent_scores = [score[0] for score in fid_score[-divergent_threshold:]]
+      if len(fid_score) >= sample_point_threshold:
+        recent_scores = [score[0] for score in fid_score[-sample_point_threshold:]]
         slopes = [
           recent_scores[i] - recent_scores[i - 1]
           for i in range(1, len(recent_scores))
@@ -222,8 +224,13 @@ def train_model(rank,
         divergent_counter = sum(
           1 for i in range(1, len(recent_scores)) if recent_scores[i] > recent_scores[i - 1]
         )
-        if (divergent_counter == divergent_threshold - 1 and average_slope > slope_threshold) or fid_score[0] < fid_score[-1]:
+        if (divergent_counter == sample_point_threshold - 1 and average_slope > slope_threshold) or (fid_score[0] < fid_score[-1]):
           divergence_flag.fill_(1)
+
+      if epoch > epoch_threshold:
+        for discriminator in discriminator_list:
+          if loss_values.discriminator_loss_values[discriminator.module.name][-1] < loss_threshold:
+            divergence_flag.fill_(1)
     
     # Barrier
     dist.barrier()
