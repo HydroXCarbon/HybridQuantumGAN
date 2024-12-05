@@ -18,7 +18,7 @@ def load_configuration(Configuration):
   load_checkpoint = Configuration['load_checkpoint']
   training = Configuration['training']
   world_size = Configuration['world_size']
-  if device == 'cuda':
+  if device.startswith("cuda"):
     available_gpus = torch.cuda.device_count()
     if world_size > available_gpus:
         world_size = available_gpus

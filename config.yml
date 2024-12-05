@@ -5,7 +5,7 @@ Configuration:
     entity: "purin-pongpanich-mahidol-university"
   # Divergent detector threshold
   sample_point_threshold: 3 # data point
-  slope_threshold: 35 # degree
+  slope_threshold: 45 # degree
   epoch_threshold: 5 # check divergent after
   loss_threshold: 0.001 # check loss if less than threshold 
   # Preprocessing
