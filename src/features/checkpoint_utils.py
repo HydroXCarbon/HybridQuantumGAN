@@ -12,7 +12,8 @@ def save_checkpoint(epoch, batch_size, checkpoint_path, model_list, optimizer_li
 		'loss_values': loss_values,
 		'fid_score': fid_score,
 		'run_id': wandb_instant.id if wandb_instant else None,
-		'finish': finish
+		'finish': finish,
+		'seed': torch.initial_seed()
 	}
 
 	for model, optimizer in zip(model_list, optimizer_list):
@@ -62,6 +63,8 @@ def get_checkpoint(checkpoint_path, model_list, optimizer_list):
 			# Load batch_size
 			batch_size = checkpoint['batch_size']
 
+			seed = checkpoint['seed']
+
 			# Load epoch
 			start_epoch = checkpoint['epoch'] + 1
 			print(Fore.GREEN + "Loading checkpoint: " + Style.RESET_ALL, end='')
@@ -70,4 +73,4 @@ def get_checkpoint(checkpoint_path, model_list, optimizer_list):
 			print(Fore.RED + "Error:" + Style.RESET_ALL + " checkpoint and model miss match at " + str(e))
 			exit(1)
 		
-	return start_epoch, loss_values, fid_score, batch_size
+	return start_epoch, loss_values, fid_score, batch_size, seed

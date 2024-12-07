@@ -35,7 +35,7 @@ def init_wandb(Hyperparameter, Configuration, run_id, log_wandb):
       'show_training_evolution': False,
       'show_sample': False,
       'generate_data': False,
-      'load_checkpoint': False
+      #'load_checkpoint': False
     })
 
     # Override local configuration with wandb config (sweep mode)

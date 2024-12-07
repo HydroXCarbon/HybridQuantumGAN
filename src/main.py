@@ -56,7 +56,7 @@ def main():
   # Load checkpoint
   start_epoch, loss_values, fid_score = 0, None, []
   if load_checkpoint: 
-    start_epoch, loss_values, fid_score, batch_size = get_checkpoint(checkpoint_path=checkpoint_path, 
+    start_epoch, loss_values, fid_score, batch_size, seed = get_checkpoint(checkpoint_path=checkpoint_path, 
                                                         model_list=model_list,
                                                         optimizer_list=optimizer_list)
 
