@@ -148,7 +148,7 @@ def train_model(rank,
         loss_values.discriminator_loss_values[discriminator.module.name].append(loss_discriminator_all)
         
         if wandb_instant and rank ==0:
-          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator_all, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
+          wandb_instant.log({f"{discriminator.module.name}_loss": loss_discriminator_all, 'batch step': (start_epoch+ epoch_i) * steps_per_epoch + batch_i * batch_size})
 
       # Training the generator
       loss_generator = train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators)
@@ -162,7 +162,7 @@ def train_model(rank,
       loss_values.generator_loss_values[generator.module.name].append(loss_generator_all)
       
       if wandb_instant and rank ==0:
-        wandb_instant.log({f"{generator.module.name}_loss": loss_generator_all, 'batch step': epoch_i * steps_per_epoch + batch_i * batch_size})
+        wandb_instant.log({f"{generator.module.name}_loss": loss_generator_all, 'batch step': (start_epoch+ epoch_i) * steps_per_epoch + batch_i * batch_size})
 
       # Update the progress bar
       progress_bar_batch.update()

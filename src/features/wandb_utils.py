@@ -27,8 +27,8 @@ def init_wandb(Hyperparameter, Configuration, run_id, log_wandb):
   
   # Disable some visualization if using wandb (sweep mode)
   if wandb.run and wandb.run.sweep_id is not None:
-    if Configuration['load_checkpoint']:
-      print(Fore.RED + "Load checkpoint is disabled in sweep mode." + Style.RESET_ALL)
+    #if Configuration['load_checkpoint']:
+      #print(Fore.RED + "Load checkpoint is disabled in sweep mode." + Style.RESET_ALL)
 
     Configuration.update({
       'show_training_process': False,
