@@ -6,7 +6,7 @@ def setup(rank, world_size, device):
     # Set up distributed training
     backend = 'gloo' if device.type == 'cpu' else 'nccl'
     random_port = str(random.randint(1024, 65535))
-
+    
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] =  random_port
 
