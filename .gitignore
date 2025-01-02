@@ -24,6 +24,6 @@ wandb/
 
 # nohub
 nohup.out
-output.log
+*.log
 
 QuantumGAN.egg-info
