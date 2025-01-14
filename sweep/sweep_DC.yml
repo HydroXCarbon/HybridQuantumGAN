@@ -8,8 +8,7 @@ metric:
 parameters:
   model_selector:
     values: ["DC_generator,
-      DC_classical_Discriminator,
-      CNN_classical_discriminator1,"]
+      CNN_classical_discriminator,"]
   learning_rate_multiplier:
     min: 3
     max: 5
