@@ -4,7 +4,7 @@ name: DC-QUA-Normal
 method: bayes 
 metric:
   goal: minimize
-  name: DC_generator  
+  name: GAN_generator_loss  
 parameters:
   model_selector:
     values: ["GAN_generator,
