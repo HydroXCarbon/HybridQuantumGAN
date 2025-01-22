@@ -9,6 +9,7 @@ import torch.multiprocessing as mp
 import wandb
 
 def main():
+  plt.ion()
   # Load the configuration file
   with open('config.yml', 'r') as file:
     config = yaml.safe_load(file)
@@ -110,7 +111,6 @@ def main():
     show_sample_data(generated_sample, title='Generated Sample')
 
   # Keep the plot open
-  plt.ion()
   plt.show(block=True)
 
 if __name__ == '__main__':

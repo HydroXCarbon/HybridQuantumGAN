@@ -103,7 +103,8 @@ def train_model(rank,
   print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}): " + Fore.GREEN + "Start training: " + Style.RESET_ALL + f'Epoch {start_epoch}')
 
   # Create instance for plotting
-  plot_progress = PlotTrainingProgress()
+  if show_training_process:
+    plot_progress = PlotTrainingProgress()
   if show_training_evolution:
     plot_evolution = PlotEvolution(epochs=epochs-start_epoch)
 
@@ -209,8 +210,8 @@ def train_model(rank,
         save_checkpoint(epoch, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant)    
 
       # Plot the evolution of the generator
-      if show_training_evolution:
-        plot_evolution.plot(generated_samples_list[-1], epoch, epoch_i)
+      if show_training_evolution and epoch % save_sample_interval == 0:
+        plot_evolution.plot(generated_samples_list[-1], epoch)
 
       # Check divergent
       if len(fid_score) >= sample_point_threshold:
@@ -249,8 +250,10 @@ def train_model(rank,
   print(f"Process {rank} ({grandparent_process_id})({parent_process_id})({process_id}):" + Fore.GREEN + 'Training finished' + Style.RESET_ALL)
 
   if rank == 0:
-
     # Save final checkpoint
     save_checkpoint(epochs, batch_size, checkpoint_path, model_list, optimizer_list, loss_values, fid_score, wandb_instant, finish=True)
+
+    # Save sample data
+    plot_evolution.save('training_evolution.png')
 
   cleanup()

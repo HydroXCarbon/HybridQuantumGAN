@@ -1,18 +1,18 @@
 program: ./src/main.py
 project: HybridQuantumGAN
-name: DC-QUA-Normal
+name: DC-QUA-DCGEN
 method: bayes 
 metric:
   goal: minimize
-  name: GAN_generator_loss  
+  name: DC_generator  
 parameters:
   model_selector:
-    values: ["GAN_generator,
+    values: ["DC_generator,
       CNN_classical_discriminator,
       Hybrid_quantum_discriminator,"]
   learning_rate_multiplier:
-    min: 2
-    max: 4
+    min: 3
+    max: 5
     distribution: uniform
   learning_rate:
     min: 5e-5

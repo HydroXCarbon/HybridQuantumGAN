@@ -19,25 +19,25 @@ Configuration:
   #Train
   training: True
   # Evaluation
-  log_wandb: True # Note: Enable this when running sweep mode
+  log_wandb: False # Note: Enable this when running sweep mode
   show_training_process: False
-  calculate_FID_score: True # Note: that Calculate FID take long time
+  calculate_FID_score: False # Note: that Calculate FID take long time
   calculate_FID_interval: 5 # Calculate FID every n epochs
-  show_training_evolution: False
-  save_sample_interval: 1 # Save sample every n epochs (to see evolution of model)
+  show_training_evolution: True
+  save_sample_interval: 2 # Save sample every n epochs (to see evolution of model)
   generate_data: False
 Hyperparameter:
   epochs: 41
   batch_size: 64
   # model selector can have only 1 generator at first index
-  model_selector: "GAN_generator1,
-    DC_generator,
-    DC_classical_Discriminator,
-    FCL_classical_discriminator_11,
+  model_selector: "GAN_generator,
+    DC_generator1,
+    DC_classical_Discriminator1,
+    FCL_classical_discriminator_1,
     FCL_classical_discriminator_21,
     FCL_classical_discriminator_31,
     CNN_classical_discriminator1,
-    Hybrid_quantum_discriminator1,"
+    Hybrid_quantum_discriminator,"
   models:
     GAN_generator:
       learning_rate: 0.0002
