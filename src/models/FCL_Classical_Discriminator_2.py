@@ -1,14 +1,11 @@
 from torch import nn
 
-class FLC_Classical_Discriminator1(nn.Module):
+class FCL_Classical_Discriminator_2(nn.Module):
   def __init__(self):
     super().__init__()
     self.model = nn.Sequential(
       nn.Flatten(),
-      nn.Linear(784, 1024),
-      nn.ReLU(),
-      nn.Dropout(0.5),
-      nn.Linear(1024, 512),
+      nn.Linear(784, 512),
       nn.ReLU(),
       nn.Dropout(0.5),
       nn.Linear(512, 256),

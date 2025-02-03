@@ -13,7 +13,8 @@ setup(
         "torchvision==0.18.1",
         "torch==2.3.1",
         "qiskit==1.1.1",
-        "qiskit-aer==0.14.2",
+        "qiskit-aer==0.15.1",
+        "qiskit-aer-gpu==0.15.1",
         "qiskit-ibm-runtime==0.24.1",
         "python-dotenv==1.0.1",
         "pylatexenc==2.10",
@@ -40,7 +41,8 @@ setup(
         "python-dotenv==1.0.1",
         "PyYAML==6.0.2",
         "tqdm==4.66.5",
-        "wandb==0.17.7",
+        "wandb==0.18.3",
         "colorama==0.4.6",
+        "torchmetrics==1.4.2",
     ]
 )
