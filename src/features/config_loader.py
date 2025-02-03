@@ -18,7 +18,7 @@ def load_configuration(Configuration):
   load_checkpoint = Configuration['load_checkpoint']
   training = Configuration['training']
   world_size = Configuration['world_size']
-  if device == 'cuda':
+  if device.startswith("cuda"):
     available_gpus = torch.cuda.device_count()
     if world_size > available_gpus:
         world_size = available_gpus
@@ -27,15 +27,13 @@ def load_configuration(Configuration):
   calculate_FID_interval = Configuration['calculate_FID_interval']
   show_training_evolution = Configuration['show_training_evolution']
   generate_data = Configuration['generate_data']
-  divergent_threshold = Configuration['divergent_threshold']
+  sample_point_threshold = Configuration['sample_point_threshold']
   slope_threshold = math.tan(Configuration['slope_threshold'])
-
-  # Set seed if defined
-  if seed is not None:
-    torch.manual_seed(seed)
-    # algorithm_globals.random_seed = seed
+  epoch_threshold = Configuration['epoch_threshold']
+  loss_threshold = Configuration['loss_threshold']
   
   return (device, save_sample_interval, checkpoint_interval, training_mode, 
     show_training_sample, load_checkpoint, training, world_size, 
     show_training_process, calculate_FID_score, calculate_FID_interval, 
-    show_training_evolution, generate_data, divergent_threshold, slope_threshold)
+    show_training_evolution, generate_data, sample_point_threshold, slope_threshold, 
+    seed, epoch_threshold, loss_threshold)

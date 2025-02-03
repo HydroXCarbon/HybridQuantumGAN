@@ -1,4 +1,4 @@
-from features import get_data_loader, get_device, get_checkpoint, train_model, get_model, load_configuration, load_hyperparameters, init_wandb, load_run_id
+from features import get_device, get_checkpoint, train_model, get_model, load_configuration, load_hyperparameters, init_wandb, load_run_id
 from visualization import show_sample_data, generate_sample
 from colorama import Fore, Style
 
@@ -9,6 +9,7 @@ import torch.multiprocessing as mp
 import wandb
 
 def main():
+  plt.ion()
   # Load the configuration file
   with open('config.yml', 'r') as file:
     config = yaml.safe_load(file)
@@ -44,7 +45,8 @@ def main():
   (device, save_sample_interval, checkpoint_interval, training_mode, 
   show_training_sample, load_checkpoint, training, world_size, 
   show_training_process, calculate_FID_score, calculate_FID_interval, 
-  show_training_evolution, generate_data, divergent_threshold, slope_threshold) = load_configuration(Configuration)
+  show_training_evolution, generate_data, sample_point_threshold, slope_threshold, 
+  seed, epoch_threshold, loss_threshold) = load_configuration(Configuration)
 
   # Use cuda if available
   device = get_device(device)
@@ -55,17 +57,9 @@ def main():
   # Load checkpoint
   start_epoch, loss_values, fid_score = 0, None, []
   if load_checkpoint: 
-    start_epoch, loss_values, fid_score, batch_size = get_checkpoint(checkpoint_path=checkpoint_path, 
+    start_epoch, loss_values, fid_score, batch_size, seed = get_checkpoint(checkpoint_path=checkpoint_path, 
                                                         model_list=model_list,
                                                         optimizer_list=optimizer_list)
-    
-  # Load data
-  train_loader = get_data_loader(batch_size=batch_size, data_folder=data_folder)
-
-  # Plot some training samples
-  if show_training_sample:
-    real_samples, labels = next(iter(train_loader))
-    show_sample_data(real_samples, title='Real Sample', sample_size=16)
 
   # Update wandb config with models and optimizers
   wandb.config.update({
@@ -79,18 +73,23 @@ def main():
     mp.spawn(
           train_model,
           args=(world_size,
+                seed,
                 device, 
                 epochs,
-                train_loader, 
+                batch_size,
                 model_list, 
                 optimizer_list, 
                 checkpoint_path, 
+                data_folder,
                 show_training_process, 
                 show_training_evolution, 
+                show_training_sample,
                 calculate_FID_score, 
                 calculate_FID_interval, 
-                wandb_instant,
-                divergent_threshold,
+                wandb_instant,  
+                sample_point_threshold,
+                epoch_threshold, 
+                loss_threshold,
                 slope_threshold,
                 save_sample_interval, 
                 start_epoch, 
@@ -112,7 +111,6 @@ def main():
     show_sample_data(generated_sample, title='Generated Sample')
 
   # Keep the plot open
-  plt.ion()
   plt.show(block=True)
 
 if __name__ == '__main__':

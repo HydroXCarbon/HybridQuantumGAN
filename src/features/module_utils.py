@@ -15,28 +15,28 @@ def move_optimizer_to_device(optimizer, device):
 
 def move_model_and_optimizer_to_device(model_list, optimizer_list, rank, device):
   # Move models to device and wrap with DistributedDataParallel
-  device = 'cpu' if device == 'cpu' else rank
+  temp_device = 'cpu' if device == 'cpu' else rank
 
   generator, discriminator_list = model_list[0], model_list[1:]
   optimizer_generator, optimizer_discriminator_list = optimizer_list[0], optimizer_list[1:]
 
-  generator = generator.to(device)
+  generator = generator.to(temp_device)
   if device == 'cpu':
     generator = DDP(generator)
   else:
     generator = DDP(generator, device_ids=[rank])
 
   for i in range(len(discriminator_list)):
-    discriminator_list[i] = discriminator_list[i].to(device)
+    discriminator_list[i] = discriminator_list[i].to(temp_device)
     if device == 'cpu':
       discriminator_list[i] = DDP(discriminator_list[i])
     else:
       discriminator_list[i] = DDP(discriminator_list[i], device_ids=[rank])
 
   # Move optimizers to the correct device
-  move_optimizer_to_device(optimizer_generator, device)
+  move_optimizer_to_device(optimizer_generator, temp_device)
   for optimizer_discriminator in optimizer_discriminator_list:
-    move_optimizer_to_device(optimizer_discriminator, device)
+    move_optimizer_to_device(optimizer_discriminator, temp_device)
 
   return generator, discriminator_list, optimizer_generator, optimizer_discriminator_list
 
@@ -47,7 +47,7 @@ def train_discriminator(discriminator, optimizer_discriminator, all_samples, all
   loss_discriminator = discriminator.module.loss_function(output_discriminator, all_samples_labels)
   loss_discriminator.backward(retain_graph=retain_graph)
   optimizer_discriminator.step()
-  return loss_discriminator.cpu().detach().numpy()
+  return loss_discriminator
 
 def train_generator(generator, discriminator_list, optimizer_generator, latent_space_samples, real_samples_labels, training_mode, epoch, num_discriminators):
   generator.zero_grad()
@@ -72,7 +72,7 @@ def train_generator(generator, discriminator_list, optimizer_generator, latent_s
 
   loss_generator.backward()
   optimizer_generator.step()
-  return loss_generator.cpu().detach().numpy()
+  return loss_generator
 
 def denormalize_and_convert_uint8(images):
   images = (images * 0.5 + 0.5) * 255.0  

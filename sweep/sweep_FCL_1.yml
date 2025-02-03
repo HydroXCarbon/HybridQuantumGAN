@@ -1,20 +1,17 @@
 program: ./src/main.py
 project: HybridQuantumGAN
-name: sweep
+name: FCL-1-Normal
 method: bayes 
 metric:
-  goal: minimize   
-  name: FID  
+  goal: minimize
+  name: GAN_generator_loss  
 parameters:
   model_selector:
     values: ["GAN_generator,
-      DCGAN_generator1,
-      FCL_classical_discriminator,
-      CNN_classical_discriminator1,
-      Hybrid_quantum_discriminator1,"]
+      FCL_classical_discriminator_1,"]
   learning_rate_multiplier:
-    min: 2
-    max: 4
+    min: 3
+    max: 5
     distribution: uniform
   learning_rate:
     min: 1e-5
